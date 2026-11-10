@@ -41,9 +41,11 @@ docker compose up --build
 
 The web app is served on http://localhost:5175 and the API on port 8082 (both loopback, set by `WEB_PORT` and `API_PORT`).
 
-Or run the API and frontend directly against a PostgreSQL 17 database:
+Or run the API and frontend directly against a PostgreSQL 17 database. The API does not read `.env`; export `DATABASE_URL` and an archive folder first (migrations are applied from `../migrations` at startup):
 
 ```sh
+export DATABASE_URL=postgres://USER:PASSWORD@127.0.0.1:5432/DB?sslmode=disable
+export ARKHIV_ARCHIVE=$PWD/var/archive
 make dev-api    # Go API from backend/cmd/app
 make dev-web    # Vite on port 5173
 ```
