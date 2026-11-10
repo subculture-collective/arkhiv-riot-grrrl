@@ -1,0 +1,85 @@
+name: Mirror CI
+run-name: Mirror CI ${{ github.sha }}
+'on':
+  push:
+    branches-ignore:
+    - main
+  workflow_dispatch: null
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    name: make verify
+    if: github.repository == 'subculture-collective/arkhiv-riot-grrrl'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+      with:
+        go-version-file: backend/go.mod
+        cache: true
+        cache-dependency-path: backend/go.sum
+    - name: Install pinned pnpm
+      run: |
+        npm install --global --prefix "$RUNNER_TEMP/arkhiv-pnpm" pnpm@10.33.0
+        echo "$RUNNER_TEMP/arkhiv-pnpm/bin" >> "$GITHUB_PATH"
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      with:
+        node-version: '24'
+        cache: pnpm
+        cache-dependency-path: web/pnpm-lock.yaml
+    - name: Install backup test dependency
+      run: |
+        if ! command -v rsync >/dev/null 2>&1; then
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends rsync
+        fi
+    - name: Verify
+      run: make verify
+  browser:
+    name: Browser smoke and production images
+    if: github.repository == 'subculture-collective/arkhiv-riot-grrrl'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - name: Isolated browser and PostgreSQL 17 smoke
+      run: make test-browser
+    - name: Build production images without publishing
+      env:
+        REGISTRY: git.subcult.tv/subculture-collective
+      run: |
+        set -euo pipefail
+        export DOCKER_BUILDKIT=1
+        docker build -f web/Dockerfile --build-arg CORE_UPSTREAM=riot-public-api:8080 --build-arg VITE_PUBLIC_URL=https://riot-grrrl.subcult.tv --label "org.opencontainers.image.revision=$GITHUB_SHA" --label "org.opencontainers.image.source=https://git.subcult.tv/subculture-collective/arkhiv-riot-grrrl" -t "$REGISTRY/arkhiv-riot-grrrl-web:$GITHUB_SHA" web
+        docker build -f backend/Dockerfile --label "org.opencontainers.image.revision=$GITHUB_SHA" --label "org.opencontainers.image.source=https://git.subcult.tv/subculture-collective/arkhiv-riot-grrrl" -t "$REGISTRY/arkhiv-riot-grrrl-api:$GITHUB_SHA" .
+        docker run --rm --network none --entrypoint nginx "$REGISTRY/arkhiv-riot-grrrl-web:$GITHUB_SHA" -t
+  mirror-gate:
+    name: Mirror CI gate
+    if: always() && github.repository == 'subculture-collective/arkhiv-riot-grrrl'
+    needs:
+    - verify
+    - browser
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+    - name: Require every verification job
+      env:
+        RESULTS: ${{ toJSON(needs) }}
+      run: |
+        python3 - <<'PY'
+        import json, os
+        results = json.loads(os.environ["RESULTS"])
+        expected = {'verify', 'browser'}
+        assert set(results) == expected, results
+        for name, result in results.items():
+            assert result["result"] == "success", name + " did not pass"
+        PY
