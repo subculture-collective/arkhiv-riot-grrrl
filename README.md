@@ -2,104 +2,127 @@
 
 ![Riot Grrrl Zine Archive identity](docs/brand/arkhiv-riot-grrrl/readme-lockup.png)
 
-A separate Arkhiv application for preserving, cataloging and reading Riot Grrrl zines.
-The collection preserves 23 issues across **Girl Germs, VOOP, Drop Babies, Violet,
-No Apologies, Personality Liberation Front** and other Riot Grrrl zines. The catalog
-uses the selected Cut & Paste design and a local PDF reader.
+A catalog and reader for preserved Riot Grrrl zines: *Girl Germs*, *VOOP*, *Drop Babies*, *Violet*, *No Apologies*, *Personality Liberation Front* and related feminist punk zines. Each record keeps the original scan, any text that could be extracted, its source history and a note on rights.
 
-This repository copies Arkhiv at `c6a816203a418f284efeb36f2d3db2afdb34e9b7`,
-retaining its history, operator CLI, preservation store, PostgreSQL catalog,
-full-text search, local PDF.js reader, public allowlist and recovery tooling.
-The existing Anarchist Zine Archive is a separate service. Its approvals and
-stored documents are not inherited by this archive.
+The zines come from Internet Archive items listed in [`collections/riot-grrrl.yaml`](collections/riot-grrrl.yaml). Their rights are unknown, and the archive does not grant any reuse license. Titles and dates follow the source records. To ask for a correction or removal, write to info@subcult.tv.
 
-## Source and collection
+Public site: https://riot-grrrl.subcult.tv/
 
-[Collection configuration](collections/riot-grrrl.yaml) selects original PDFs
-explicitly across 23 Archive.org items. The 23 PDFs and 21 OCR companions total
-937,935,490 bytes. Caps: 30 documents, 2 GiB per batch, 250 MiB per file,
-two concurrent transfers and a 2 GiB free-space reserve. Raw source snapshots and verified
-files stay outside Git. Source rights are unknown; no reuse license is asserted.
+This repository is a separate copy of SUBCULT's Arkhiv archive software with its own collection, catalog design and deployment. It shares no data with the other archives built on that software.
 
-[Source research and qualification plan](docs/plans/0003-riot-grrrl-pilot.md)
-records the source choices, private qualification and release boundaries.
-The [expansion plan](docs/plans/0004-riot-grrrl-expansion.md) records the sixteen additions.
-The discovery query follows the 23 selected item identities. Weekly refresh
-queues changes for review; it does not discover every Riot Grrrl zine or publish
-new editions automatically.
+## Features
 
-## Development
+For readers:
 
-Use Go 1.26, Node 24 and pnpm 10.33.0. Read `AGENTS.md` and the shared T3 guide.
-The existing Arkhiv recipe can be selected explicitly, with state isolated by root:
+- A catalog of covers with search across metadata and page text, subject filters and a choice of layouts.
+- Document pages with editions, pages, source details and rights notes.
+- An on-site PDF reader (PDF.js) with a reading focus mode, and search inside documents that have extracted text.
+- Downloads of the original preserved files.
+- Favorites saved in your browser, and share links.
+
+For operators, the `arkhiv` CLI:
+
+- Plans and acquires explicitly selected source files in bounded, resumable batches, and keeps the original bytes with their SHA-256 hashes.
+- Extracts text and cover images, and supports editorial edits and grouping of editions without changing the source metadata.
+- Refreshes the source inventory and queues added, changed or removed files for review instead of publishing them.
+- Approves or withdraws public access per file from a reviewed manifest.
+- Audits stored files, and backs up and restores the catalog and archive.
+
+## Quick start
+
+Requirements: Go 1.26, Node.js 24, pnpm 10.33.0 and Docker with Compose.
+
+Run everything in containers:
 
 ```sh
-t3-dev --profile arkhiv verify
-t3-dev --profile arkhiv start
-t3-dev --profile arkhiv sync
+cp .env.example .env    # then choose a local database password
+docker compose up --build
 ```
 
-The preview contains synthetic documents, not acquired zines. `make verify` checks
-formatting, Go vet/tests, TypeScript, lint, frontend tests/build, Compose and
-Open Pilot templates. `make test-browser` checks desktop/narrow local rendering
-with a disposable PostgreSQL 17 database. Hosted CI is separate evidence.
+The web app is served on http://localhost:5175 and the API on port 8082 (both loopback, set by `WEB_PORT` and `API_PORT`).
 
-The CLI retains the name `arkhiv`; its Go module is
-`git.subcult.tv/subculture-collective/arkhiv-riot-grrrl`. The default collection
-is `collections/riot-grrrl.yaml`. Local Compose defaults use ports 5434/8082/5175.
-`VITE_PUBLIC_URL` is optional; canonical and contact links use the current origin
-when no public domain has been configured. Correction contact: info@subcult.tv.
+Or run the API and frontend directly against a PostgreSQL 17 database. The API does not read `.env`; export `DATABASE_URL` and an archive folder first (migrations are applied from `../migrations` at startup):
 
-## Qualification and operations
+```sh
+export DATABASE_URL=postgres://USER:PASSWORD@127.0.0.1:5432/DB?sslmode=disable
+export ARKHIV_ARCHIVE=$PWD/var/archive
+make dev-api    # Go API from backend/cmd/app
+make dev-web    # Vite on port 5173
+```
 
-The expanded private collection passed all 23 PDF download hashes and reader renders,
-with Archive.org blocked. It has 786 pages; 21 PDFs have extracted text. All 44
-preserved files were reused on repeated acquisition, and the independent NUC
-backup passed integrity verification. A fresh isolated restore then passed all
-44 asset checks and all 23 local download/reader checks. See the [expansion qualification report](docs/reports/riot-grrrl-expansion-qualification-20261003.md).
-The [original pilot report](docs/reports/riot-grrrl-pilot-qualification-20261003.md)
-retains the earlier seven-document restore evidence.
-The public site is [riot-grrrl.subcult.tv](https://riot-grrrl.subcult.tv/). Its
-[reviewed manifest](collections/riot-grrrl-public-review.json) approves these exact
-23 PDFs, without asserting a reuse license. It uses a separate restored database,
-read-only serving role and archive mount. The original private pilot remains
-separate. See the [public rollout report](docs/reports/riot-grrrl-public-rollout-20261004.md)
-for actual HTTP, reader and deployment evidence. Fresh public recovery passed all 17 table counts and all 23 PDF hashes.
+Vite proxies `/api` to `http://127.0.0.1:8080`. Set `ARKHIV_DEV_API` to use another API address.
 
-Earlier plans and dated reports under `docs/` describe the upstream Arkhiv
-project. They are retained as implementation history, not evidence that this
-Riot Grrrl pilot has been qualified or publicly released. Start with the Riot
-Grrrl plan and its dated qualification report for this repository's state.
+Checks:
 
-## Catalog design
+```sh
+make verify               # Go format, vet and tests; web typecheck, lint, tests and build; Compose config; dependency pins
+make test-browser         # desktop and narrow-screen browser tests in a disposable Docker stack
+make test-operations      # Python tests for the scheduled job scripts
+make test-integration     # catalog, search, asset and recovery tests; needs a disposable TEST_DATABASE_URL
+```
 
-The owner selected **A — Cut & Paste** from the [inspiration studies](docs/design/catalog-previews.md). The interface now displays real catalog metadata and local cover scans in the selected layout, with existing search, reading, downloads and rights information. The comparison prototypes are removed. The selected frontend is deployed to the private Almaz service; all 23 PDFs passed download/hash/render checks against it. The owner authorized public rollout on October 4; the same distinct interface
-is now live on the public hostname.
+## Configuration
 
-The original frontend remains in this repository. A versioned headless Arkhiv
-engine can serve it through the [shared-core release runbook](docs/runbooks/shared-core-release.md),
-with an immutable pin and independently verified upgrades.
+| Variable | Used by | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | API, CLI | PostgreSQL connection string |
+| `API_ADDR` | API | Listen address |
+| `ARKHIV_ARCHIVE` | API, CLI | Root folder of preserved files |
+| `MIGRATIONS_DIR` | API | Folder of SQL migrations, applied at startup |
+| `ARKHIV_PUBLIC` | API | Set to `1` to serve only publicly approved files, without running migrations |
+| `ARKHIV_REVISION` | API | Revision string reported by the server |
+| `VITE_PUBLIC_URL` | Web build | Canonical public address; the current origin is used when unset |
+| `VITE_CORRECTION_CONTACT` | Web build | Address for correction and removal requests |
 
-## Viewer feedback, October 6
+Local Compose also reads `PROJECT_NAME`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT`, `API_PORT` and `WEB_PORT` from `.env` (see [`.env.example`](.env.example)), and `ARKHIV_ARCHIVE_PATH` for the archive folder.
 
-The product independently pins shared viewer 0.4.0. Its native backend and core
-pins remain independent. Browser favorites are scoped to this product or selected
-collection and retain removable unavailable references. Sharing has a selectable
-copy fallback and social compose links. Optional account activation requires a
-verified native-to-canonical identity mapping and a separate provider decision.
-No acquisition, approval or deployment changes are included.
+The collection itself (source items, selected files, size and batch limits, update policy) is defined in [`collections/riot-grrrl.yaml`](collections/riot-grrrl.yaml). Public access is granted by the reviewed manifest [`collections/riot-grrrl-public-review.json`](collections/riot-grrrl-public-review.json).
 
-The [viewer qualification report](docs/reports/viewer-feedback-2026-10-06.md) records local verification and browser evidence.
+## Operator commands
 
-## Bounded backup follow-up
+Build the CLI with `make build`, then run `bin/arkhiv <command> --config ../collections/riot-grrrl.yaml` from `backend/`. Commands include:
 
-The opt-in [bounded backup mode](docs/runbooks/bounded-backups.md) retains complete snapshots and shares verified read-only files between backups. Explicit snapshot/staging/independent-store caps refuse unsafe growth without pruning evidence. Source qualification and live capacity/restore requirements are tracked in Anarchist Archive #56; live jobs retain their existing behavior until reviewed activation.
+| Command | Purpose |
+| --- | --- |
+| `migrate` | Apply database migrations |
+| `plan`, `acquire` | Preview and run a bounded acquisition |
+| `refresh`, `changes`, `review-change`, `acquire-changes` | Check the source for changes, list them, decide on each, and fetch approved changes |
+| `list`, `inspect`, `edit`, `group` | Inspect documents, apply editorial overrides, group editions |
+| `extract` | Extract text and covers |
+| `publish`, `unpublish` | Publish documents in the private catalog |
+| `approve-public`, `revoke-public` | Grant or withdraw public access from a reviewed manifest |
+| `audit`, `backup`, `restore` | Check stored files, back up and restore |
 
-## Brand assets
+[`docs/runbooks/source-updates.md`](docs/runbooks/source-updates.md) explains the source refresh and change review process.
 
-The product identity and selected public exports are recorded in [the brand handoff](docs/brand/arkhiv-riot-grrrl/GUIDE.md) and [source hashes](docs/brand/arkhiv-riot-grrrl/export.json). Regenerate from SUBCULT Studio with `python3 studio/scripts/export_remaining_brand.py arkhiv-riot-grrrl /path/to/this/repository`; use `--check` to verify the export without writing.
+## Deploy
 
-## Automatic public frontend deployment
+The repository builds two images:
 
-The existing verification gate now builds frontend images on PRs and deploys
-verified main builds to the live Almaz frontend. See the [CI deployment and rollback procedure](docs/automatic-frontend-deployment.md).
+- [`backend/Dockerfile`](backend/Dockerfile): the API and the `arkhiv` CLI, with migrations, collection files, `poppler-utils` and the PostgreSQL client. The API listens on port 8080 and stores files under `/data/archive`.
+- [`web/Dockerfile`](web/Dockerfile): the static frontend on nginx. [`web/nginx.public.conf`](web/nginx.public.conf) is the configuration for a public site.
+
+For a public deployment, run migrations and acquisition with an operator database role, then start the API with `ARKHIV_PUBLIC=1`, a read-only database role and a read-only archive mount. Approve files with `approve-public` before they appear. Serve the frontend over HTTPS.
+
+## Project layout
+
+```text
+backend/       Go API (cmd/app) and operator CLI (cmd/arkhiv)
+web/           React and Vite frontend with the PDF reader
+migrations/    SQL migrations
+collections/   Collection configuration and public access manifest
+scripts/       Browser test stack and scheduled job scripts
+deploy/        Shared-engine Compose file and version pins
+docs/          Brand assets, design studies, plans and runbooks
+```
+
+## Contributing
+
+- Bugs and feature requests: [GitHub issues](https://github.com/subculture-collective/arkhiv-riot-grrrl/issues).
+- Code: pull requests on GitHub against `main`. CI runs `make verify`, the browser tests and a production image build on every pull request. All must pass.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+
+## License
+
+The software is licensed under GPL-3.0-only. See [LICENSE](LICENSE). The license does not apply to the archived zines, whose rights remain with their creators.
