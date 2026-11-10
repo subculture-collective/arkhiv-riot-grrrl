@@ -78,7 +78,7 @@ The collection itself (source items, selected files, size and batch limits, upda
 
 ## Operator commands
 
-Build the CLI with `make build`, then run `backend/bin/arkhiv <command> --config ../collections/riot-grrrl.yaml` from `backend/`. Commands include:
+Build the CLI with `make build`, then run `bin/arkhiv <command> --config ../collections/riot-grrrl.yaml` from `backend/`. Commands include:
 
 | Command | Purpose |
 | --- | --- |
