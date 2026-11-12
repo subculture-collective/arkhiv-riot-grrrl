@@ -2,7 +2,7 @@
 
 The proposed release is the 25-document private pilot, with 26 verified PDF variants.
 The exact document/variant IDs and original hashes are recorded in
-[the review manifest](../../collections/anarchist-zines-public-review.json).
+the review manifest (`collections/anarchist-zines-public-review.json` in the original Arkhiv repository).
 
 Public URL: `https://arkhiv.subcult.tv`. Correction/removal contact:
 `info@subcult.tv`. Originals remain preserved independently of access decisions.

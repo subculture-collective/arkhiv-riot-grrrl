@@ -10,5 +10,3 @@ Good runbooks include:
 - Expected output
 - Rollback or cleanup steps
 - Verification
-
-Add stack-specific runbooks as this template is specialized.

@@ -1,7 +1,9 @@
 # Shared print reader adoption
 
-This frontend pins version 0.2.1 and retains its verified release receipt in
-`docs/releases/archive-viewer-0.2.1.json`. It imports reader controls from the exact published
+This frontend pins the `@subcult/archive-viewer` version recorded in
+`deploy/viewer-release.json`; `scripts/check_viewer_pin.py` checks that
+`web/package.json` and the lockfile match it. The receipt of the first adopted
+version is kept in `docs/releases/archive-viewer-0.2.1.json`. The frontend imports reader controls from the exact published
 `@subcult/archive-viewer/print` dependency. The catalog, collection branding,
 document routes, PDF.js runtime/assets and asset-access policy remain owned here.
 The local adapter preserves variant IDs, page links and text-coverage status.
