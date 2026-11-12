@@ -4,7 +4,7 @@ COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 COPY backend/ ./
 RUN go build -o /out/api ./cmd/app && go build -o /out/arkhiv ./cmd/arkhiv
-FROM alpine:3.22
+FROM alpine:3.24
 RUN apk add --no-cache ca-certificates poppler-utils postgresql17-client util-linux
 WORKDIR /app
 COPY --from=build /out/ /app/
