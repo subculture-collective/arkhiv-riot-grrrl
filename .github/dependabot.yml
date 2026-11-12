@@ -48,7 +48,10 @@ updates:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
       # Must match @playwright/test in web/package.json.
-      - dependency-name: "mcr.microsoft.com/playwright"
+      - dependency-name: "playwright"
+      # A new Go minor is a toolchain change made together with backend/go.mod.
+      - dependency-name: "golang"
+        update-types: ["version-update:semver-minor"]
 
   - package-ecosystem: github-actions
     directory: /
