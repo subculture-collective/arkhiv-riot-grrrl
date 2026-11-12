@@ -1,6 +1,6 @@
 {
   "studio_repository": "subculture-collective/subcult-tv",
-  "studio_revision": "7c9f1c936f5465296bb6319d3f81fe855215b870",
+  "studio_revision": "34a1cddc2a2433716514b9e0eae19f280db320a2",
   "brand": "arkhiv-riot-grrrl",
   "files": [
     {
@@ -12,7 +12,7 @@
     {
       "source": "studio/brands/arkhiv-riot-grrrl/product/readme-lockup.png",
       "target": "docs/brand/arkhiv-riot-grrrl/readme-lockup.png",
-      "sha256": "02de540f6530f100ba51fcf4920590518946c4b1cd58b6de036d68c913c6f8bc",
+      "sha256": "5340d72fa3c901194f706b4a0066f0ffbe526fc22c3eb803d3c1a385ca819139",
       "transformation": "unchanged copy"
     },
     {
