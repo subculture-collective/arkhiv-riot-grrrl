@@ -1,6 +1,6 @@
 # Contributing
 
-This repository is a base template for derived SUBCULT projects. Keep changes small, reviewable, and useful across stacks.
+This repository holds the Riot Grrrl Zine Archive, a separate copy of the SUBCULT Arkhiv archive software. Keep changes small and reviewable.
 
 ## Development flow
 
@@ -21,10 +21,10 @@ This repository is a base template for derived SUBCULT projects. Keep changes sm
 Prefer concise conventional-style subjects:
 
 ```text
-feat: add stack recipe
-docs: update Open Pilot guidance
-fix: correct make target detection
-chore: refresh template metadata
+feat: add subject filter to the catalog
+docs: update source update runbook
+fix: keep page links after a reader reload
+chore: refresh web lockfile
 ```
 
 ## Open Pilot issues
@@ -56,18 +56,11 @@ Default full check:
 make verify
 ```
 
-Examples for derived templates:
+Narrower examples:
 
 ```bash
-go test ./...
+cd backend && go test ./...
 pnpm --dir web run test
-uv run pytest
-cargo test --all
+make test-operations
 docker compose config --quiet
 ```
-
-## Template boundaries
-
-This base template should stay stack-neutral. Do not add application scaffolding here unless the issue explicitly changes the role of this repository.
-
-Stack-specific scaffolds should live in derived template repositories.

@@ -1,10 +1,13 @@
 # Automatic public frontend deployment
 
-The native Gitea `verify` workflow runs the existing full repository verification,
-then builds deployable images on PRs and main. PR image builds receive no registry
-or deployment credentials. Main pushes and manual dispatches of main publish the
-verified images through the existing organization registry credential, then
-stream the same frontend image to the existing Almaz service.
+Since November 10, 2026 GitHub Actions deploys this app. On every branch except
+main, `.github/workflows/mirror-ci.yml` runs the full repository verification and
+the browser suite, and builds the production images without registry or
+deployment credentials. On main pushes and manual dispatches,
+`.github/workflows/deploy.yml` builds the images, publishes them to GitHub
+Packages, joins the tailnet and streams the frontend image to the existing Almaz
+service. The Gitea `verify` workflow still runs the verification on main but no
+longer deploys.
 
 This app uses Compose service `riot-public-web`, container `arkhiv-platform-public-20261004-riot-public-web-1`, at
 https://riot-grrrl.subcult.tv/. Deployment uses this repository's dedicated `HOMELAB_DEPLOY_KEY` and

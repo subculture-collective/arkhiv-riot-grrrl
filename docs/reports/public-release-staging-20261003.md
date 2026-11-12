@@ -3,7 +3,7 @@
 The owner approved public reading and downloads for the exact 25 pilot documents
 and 26 PDF variants. Rights remain unknown, source attribution and the contact
 `info@subcult.tv` are visible, and Arkhiv asserts no reuse license. The reviewed
-manifest is [anarchist-zines-public-review.json](../../collections/anarchist-zines-public-review.json).
+manifest is `collections/anarchist-zines-public-review.json` in the original Arkhiv repository.
 A-Info is preserved and privately reviewed; none of its variants is public approved.
 
 ## Artifacts and qualification
@@ -28,7 +28,7 @@ Nginx serves the local reader, worker, fonts and PDF assets with no-store respon
 The public web binds only `127.0.0.1:54614` for staging and joins the existing
 `projects` network as `arkhiv-public-web` for the proposed Caddy route.
 
-The concrete route is [deploy/arkhiv.Caddyfile](../../deploy/arkhiv.Caddyfile).
+The concrete route is `deploy/arkhiv.Caddyfile` in the original Arkhiv repository.
 The isolated composition and role grants are in
 [public-compose.example.yml](../../deploy/public-compose.example.yml) and
 [public-role.sql](../../deploy/public-role.sql). Real credentials remain outside Git.

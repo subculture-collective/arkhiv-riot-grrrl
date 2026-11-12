@@ -6,7 +6,7 @@ Each issue has its own Internet Archive item, unlike the first bundled source.
 
 Source: [A-Info collection](https://archive.org/details/a_info_zine). The bounded
 discovery query is `collection:a_info_zine AND title:(2011 OR 2012)`; the complete
-response returned 15 items. The [collection configuration](../../collections/a-info-zines.yaml)
+response returned 15 items. The collection configuration (`collections/a-info-zines.yaml` in the original Arkhiv repository)
 sets a 25-item discovery cap, ten results per page and 64 HTTP requests per refresh.
 
 Selection includes 15 PDFs and 15 OCR companions, totaling 98,015,146 bytes.
