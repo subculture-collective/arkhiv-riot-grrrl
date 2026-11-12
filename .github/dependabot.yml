@@ -1,0 +1,63 @@
+# Quiet by design: ready pull requests in this organization merge themselves
+# and main deploys, so each ecosystem gets at most one grouped minor/patch
+# pull request a month. Major upgrades are done by hand.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /backend
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 1
+    groups:
+      gomod-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 1
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      # Pinned by deploy/viewer-release.json and scripts/check_viewer_pin.py.
+      - dependency-name: "@subcult/archive-viewer"
+      # Exact pin; a new PDF.js changes how the reader renders.
+      - dependency-name: "pdfjs-dist"
+      # Must match the Playwright image in web/Dockerfile.browser and
+      # web/Dockerfile.readerprobe.
+      - dependency-name: "@playwright/test"
+
+  - package-ecosystem: docker
+    directories:
+      - /backend
+      - /web
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 1
+    groups:
+      docker-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      # Must match @playwright/test in web/package.json.
+      - dependency-name: "mcr.microsoft.com/playwright"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 1
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
