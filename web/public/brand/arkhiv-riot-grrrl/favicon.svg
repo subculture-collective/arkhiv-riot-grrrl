@@ -1,1 +1,82 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><title>Riot Grrrl Zine Archive browser icon</title><rect x="0" y="0" width="512" height="512" fill="#f5edea"/><g transform="translate(32 32) scale(0.875)"><path d="M64 96L360 64L416 344L112 384Z" fill="#23191e" stroke-linecap="round" stroke-linejoin="round"/><path d="M144 184L448 152L416 432L96 408Z" fill="#9b1459" stroke-linecap="round" stroke-linejoin="round"/><path d="M80 320L400 224" fill="none" stroke="#705246" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/><path d="M176 128L184 176M240 120L248 168" fill="none" stroke="#9b1459" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 512 512"
+   width="512"
+   height="512"
+   version="1.1"
+   id="svg6"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs6" />
+  <title
+     id="title1">Riot Grrrl Zine Archive browser icon</title>
+  <rect
+     x="0"
+     y="0"
+     width="512"
+     height="512"
+     fill="#f5bed4"
+     id="rect1" />
+  <g
+     transform="translate(16 0) scale(0.9375)"
+     id="g6">
+    <g
+       transform="translate(362 282) rotate(5)"
+       id="g3">
+      <rect
+         x="-121.34"
+         y="-119.62"
+         width="259"
+         height="261"
+         fill="#231722"
+         fill-opacity=".16"
+         id="rect2" />
+      <rect
+         x="-129.5"
+         y="-130.5"
+         width="259"
+         height="261"
+         fill="#231722"
+         id="rect3" />
+      <path
+         d="m 0.9519751,-96.9 q 26.9279999,0 48.4159999,8.16 21.488,8.16 34,24.208 12.784,15.776 12.784,38.624 h -57.392 q 0,-11.696 -10.336,-18.768 -10.336,-7.344 -25.0239999,-7.344 -21.2160001,0 -32.0960001,11.424 -10.88,11.152 -10.88,31.824 V 8.636 q 0,20.672 10.88,32.096 10.88,11.152 32.0960001,11.152 14.6879999,0 25.0239999,-6.8 10.336,-7.072 10.336,-17.952 H -3.6720249 v -38.08 H 96.151975 V 93.5 h -31.008 l -5.984,-18.496 q -25.568,21.76 -66.9119999,21.76 -46.5120001,0 -69.9040001,-24.208 -23.391995,-24.48 -23.391995,-72.624 0,-47.6 26.383995,-72.08 26.656,-24.752 75.6160001,-24.752 z"
+         id="text3"
+         style="font-weight:700;font-size:272px;font-family:'Archivo Black';text-anchor:middle;fill:#f0ebd9"
+         aria-label="G" />
+    </g>
+    <g
+       transform="translate(150 244) rotate(-6)"
+       id="g5">
+      <rect
+         x="-106.34"
+         y="-119.62"
+         width="229"
+         height="261"
+         fill="#231722"
+         fill-opacity=".16"
+         id="rect4" />
+      <rect
+         x="-114.5"
+         y="-130.5"
+         width="229"
+         height="261"
+         fill="#f0ebd9"
+         id="rect5" />
+      <path
+         d="m -28.753906,13.5625 v 62.15625 l 22.8437498,3.585937 V 89 H -91.839844 V 79.304687 L -70.722656,75.71875 V -75.953125 l -22.84375,-3.453125 v -9.695312 h 85.1328122 q 39.3124998,0 58.7031248,12.085937 19.390625,12.085938 19.390625,37.71875 0,38.25 -35.859375,49.140625 l 47.546875,65.875 19.257814,3.585937 V 89 H 42.964844 L -6.7070312,13.5625 Z m 56.976562,-52.59375 q 0,-19.921875 -8.234375,-27.625 -8.234375,-7.835937 -30.148437,-7.835937 h -18.59375 v 73.445312 h 19.2578122 q 20.4531248,0 29.0859378,-8.5 8.632812,-8.5 8.632812,-29.484375 z"
+         id="text5"
+         style="font-weight:700;font-size:272px;font-family:'Liberation Serif';text-anchor:middle;fill:#231722"
+         aria-label="R" />
+    </g>
+    <rect
+       x="-85"
+       y="-20"
+       width="170"
+       height="40"
+       fill="#e9e889"
+       fill-opacity=".82"
+       transform="translate(236 112) rotate(-5)"
+       id="rect6" />
+  </g>
+</svg>
