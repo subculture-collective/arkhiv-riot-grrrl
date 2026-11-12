@@ -8,7 +8,7 @@ ARG VITE_CORRECTION_CONTACT=info@subcult.tv
 ENV VITE_PUBLIC_URL=$VITE_PUBLIC_URL VITE_CORRECTION_CONTACT=$VITE_CORRECTION_CONTACT
 RUN pnpm run build
 
-FROM nginx:1.29-alpine
+FROM nginx:1.31-alpine
 ARG CORE_UPSTREAM=api:8080
 COPY --from=build /src/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
