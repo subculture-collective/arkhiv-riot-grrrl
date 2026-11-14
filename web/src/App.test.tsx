@@ -6,6 +6,7 @@ import App, {
   addressWithout,
   languageName,
   originalDate,
+  pageMeta,
   selectVariant,
 } from "./App";
 describe("catalog before the API responds", () => {
@@ -82,5 +83,44 @@ describe("stale edition address", () => {
     } finally {
       if (size) Object.defineProperty(URLSearchParams.prototype, "size", size);
     }
+  });
+});
+describe("head metadata", () => {
+  const base = "https://riot-grrrl.subcult.tv";
+  const doc = {
+    id: "abc",
+    collection: "riot-grrrl",
+    source_item: "item",
+    metadata: { title: "Drop Babies - Issue 1", creator: "Layla Gibbon", date: "1992" },
+    rights: "unknown",
+    variants: [],
+    hits: [],
+  };
+  it("names the zine and its own address on a document page", () => {
+    const meta = pageMeta(doc, "Riot Grrrl", "riot-grrrl", "riot-grrrl", "abc", false, base);
+    expect(meta.url).toBe("https://riot-grrrl.subcult.tv/documents/abc");
+    expect(meta.title).toBe("Drop Babies - Issue 1 · Riot Grrrl Archive");
+    expect(meta.socialTitle).toBe("Drop Babies - Issue 1");
+    expect(meta.description).toContain("Drop Babies - Issue 1 (Layla Gibbon, 1992)");
+    expect(meta.socialDescription).toBe(meta.description);
+    const undated = { ...doc, metadata: { ...doc.metadata, date: "unknown" } };
+    expect(pageMeta(undated, "", "", "", "abc", false, base).description).toMatch(/^Drop Babies - Issue 1 \(Layla Gibbon\):/);
+  });
+  it("keeps the document address before the record loads", () => {
+    expect(pageMeta(null, undefined, "", undefined, "abc", false, base).url).toBe(
+      "https://riot-grrrl.subcult.tv/documents/abc",
+    );
+  });
+  it("restores the site values on the catalog", () => {
+    const meta = pageMeta(null, "Riot Grrrl", "riot-grrrl", "riot-grrrl", "", false, base);
+    expect(meta.url).toBe("https://riot-grrrl.subcult.tv/");
+    expect(meta.socialTitle).toBe("Riot Grrrl Zine Archive");
+    expect(meta.description).toMatch(/^Read preserved feminist punk zines/);
+    expect(pageMeta(null, "Other", "other", "riot-grrrl", "", false, base).url).toBe(
+      "https://riot-grrrl.subcult.tv/?collection=other",
+    );
+    const series = pageMeta(null, "Riot Grrrl", "riot-grrrl", "riot-grrrl", "", true, base);
+    expect(series.url).toBe("https://riot-grrrl.subcult.tv/series");
+    expect(series.title).toBe("Series · Riot Grrrl Archive");
   });
 });

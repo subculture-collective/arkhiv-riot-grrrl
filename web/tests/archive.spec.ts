@@ -269,6 +269,7 @@ test("missing pages, stale links and a reader that cannot load", async ({ page }
   await expect(page).toHaveTitle("Not found · Riot Grrrl Archive");
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
   await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
+  await expect(page.locator('meta[property="og:url"]')).toHaveCount(0);
   await page.goto("/made-up-path");
   await expect(page.getByRole("alert")).toContainText("This page does not exist.");
   await expect(page.getByRole("link", { name: "Open Mutual aid fixture", exact: true })).toHaveCount(0);
@@ -413,7 +414,48 @@ test("invalid filters, stale pages and unknown collections explain themselves", 
   await expect(page.getByRole("heading", { name: "Collection not found" })).toBeVisible();
   await expect(page.getByRole("alert")).toContainText("There is no collection called “fixture-zinez”.");
   await expect(page.getByText("No documents match")).toHaveCount(0);
+  // A missing collection is not indexed and claims no address.
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
+  await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
+  await expect(page.locator('meta[property="og:url"]')).toHaveCount(0);
   await page.getByRole("link", { name: /^Browse / }).click();
   await expect(page.getByRole("heading", { name: "Collection not found" })).toHaveCount(0);
   await expect(search).toBeVisible();
+});
+
+test("head metadata names the zine on its page and the site on the catalog", async ({ page }) => {
+  const head = () =>
+    page.evaluate(() => ({
+      canonical: document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href,
+      ogURL: document.querySelector('meta[property="og:url"]')?.getAttribute("content"),
+      ogTitle: document.querySelector('meta[property="og:title"]')?.getAttribute("content"),
+      twitterTitle: document.querySelector('meta[name="twitter:title"]')?.getAttribute("content"),
+      description: document.querySelector('meta[name="description"]')?.getAttribute("content"),
+      ogDescription: document.querySelector('meta[property="og:description"]')?.getAttribute("content"),
+    }));
+  await page.goto("/?collection=fixture-zines&offset=0");
+  await expect(page.getByRole("link", { name: "Open Mutual aid fixture", exact: true }).first()).toBeVisible();
+  const catalog = await head();
+  expect(catalog.ogURL).toBe(catalog.canonical);
+  expect(catalog.canonical).not.toContain("offset");
+  expect(catalog.ogTitle).toBe("Riot Grrrl Zine Archive");
+  expect(catalog.description).toMatch(/^Read preserved feminist punk zines/);
+  const href = await page.getByRole("link", { name: "Open Mutual aid fixture", exact: true }).first().getAttribute("href");
+  const id = new URL(href!, page.url()).pathname.split("/")[2];
+  await page.goto(`/documents/${id}?page=2`);
+  await expect(page.getByRole("heading", { name: "Mutual aid fixture", level: 1 })).toBeVisible();
+  await expect.poll(async () => (await head()).ogTitle).toBe("Mutual aid fixture");
+  const zine = await head();
+  expect(zine.canonical).toBe(new URL(`/documents/${id}`, page.url()).href);
+  expect(zine.ogURL).toBe(zine.canonical);
+  expect(zine.twitterTitle).toBe("Mutual aid fixture");
+  expect(zine.description).toMatch(/^Mutual aid fixture/);
+  expect(zine.ogDescription).toBe(zine.description);
+  expect(await page.title()).toBe("Mutual aid fixture · Riot Grrrl Archive");
+  await page.goto("/series?collection=fixture-zines");
+  await expect(page.getByRole("heading", { name: "Series", level: 1 })).toBeVisible();
+  const series = await head();
+  expect(series.canonical).toBe(new URL("/series", page.url()).href);
+  expect(series.ogURL).toBe(series.canonical);
+  expect(series.ogTitle).toBe("Riot Grrrl Zine Archive");
 });
