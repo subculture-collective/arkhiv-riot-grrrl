@@ -71,7 +71,7 @@ make test-integration     # catalog, search, asset and recovery tests; needs a d
 | `ARKHIV_ARCHIVE` | API, CLI | Root folder of preserved files |
 | `MIGRATIONS_DIR` | API | Folder of SQL migrations, applied at startup |
 | `ARKHIV_PUBLIC` | API | Set to `1` to serve only publicly approved files, without running migrations |
-| `ARKHIV_REVISION` | API | Revision string reported by the server |
+| `ARKHIV_REVISION` | API | Revision string reported by the server. Release images set it from the build argument of the same name; an explicit value overrides it. |
 | `VITE_PUBLIC_URL` | Web build | Canonical public address; the current origin is used when unset |
 | `VITE_CORRECTION_CONTACT` | Web build | Address for correction and removal requests |
 
