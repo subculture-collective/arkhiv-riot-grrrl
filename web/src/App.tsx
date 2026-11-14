@@ -128,6 +128,14 @@ export const originalDate = (doc: DocumentRecord) => {
 };
 export const selectVariant = (variants: Variant[], requested: string | null) =>
   requested ? variants.find((v) => v.id === requested) : variants[0];
+// The address without one query parameter. It serialises the query rather
+// than reading URLSearchParams.size, which older supported browsers lack.
+export const addressWithout = (pathname: string, search: string, key: string) => {
+  const q = new URLSearchParams(search);
+  q.delete(key);
+  const rest = q.toString();
+  return rest ? `${pathname}?${rest}` : pathname;
+};
 const favoriteDocument = async (
   id: string,
   signal: AbortSignal,
@@ -194,11 +202,9 @@ export default function App() {
           // A link to a replaced or withdrawn edition opens the document's
           // available edition instead, with a notice, and the address and
           // share links drop the stale edition.
-          const q = new URLSearchParams(location.search);
-          const requested = q.get("variant");
+          const requested = new URLSearchParams(location.search).get("variant");
           if (requested && d.variants.length && !selectVariant(d.variants, requested)) {
-            q.delete("variant");
-            history.replaceState(null, "", `${location.pathname}${q.size ? `?${q}` : ""}`);
+            history.replaceState(null, "", addressWithout(location.pathname, location.search, "variant"));
             setStaleEdition(true);
           }
           setDoc(d);
