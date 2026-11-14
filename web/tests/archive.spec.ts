@@ -173,3 +173,53 @@ test("hashed assets, including the pdf.js worker, are cached for a year", async 
     expect((await request.get(path)).status(), path).toBe(404);
   }
 });
+
+test("missing pages, stale links and a reader that cannot load", async ({ page }) => {
+  await page.goto("/documents/doesnotexist");
+  const alert = page.getByRole("alert");
+  await expect(alert).toContainText("This zine is not in the archive.");
+  await expect(alert.getByRole("link", { name: "Browse all zines" })).toHaveAttribute("href", "/");
+  await expect(page.getByRole("link", { name: "Try again" })).toHaveCount(0);
+  await expect(page).toHaveTitle("Not found · Riot Grrrl Archive");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
+  await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
+  await page.goto("/made-up-path");
+  await expect(page.getByRole("alert")).toContainText("This page does not exist.");
+  await expect(page.getByRole("link", { name: "Open Mutual aid fixture", exact: true })).toHaveCount(0);
+
+  await page.goto("/?collection=fixture-zines");
+  await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+  const href = await page.getByRole("link", { name: "Open Mutual aid fixture", exact: true }).first().getAttribute("href");
+  const path = new URL(href!, "http://web").pathname;
+  // A shared search-hit link whose edition was replaced, with an out-of-range page.
+  await page.goto(`${path}?read=1&variant=stale&page=99`);
+  await expect(page.getByRole("status").filter({ hasText: "no longer available" })).toBeVisible();
+  await expect(page.getByTestId("pdf-canvas")).toBeVisible();
+  await expect(page.getByLabel("Page number")).toHaveValue("2");
+  await expect(page.getByRole("link", { name: /^Download PDF/ })).toBeVisible();
+  await expect.poll(() => new URL(page.url()).search).toBe("?read=1&page=2");
+  await page.goto(`${path}?page=abc`);
+  await expect(page.getByLabel("Page number")).toHaveValue("1");
+  await expect.poll(() => new URL(page.url()).search).toBe("?page=1");
+
+  // An edition without text offers no Search & text panel.
+  const documentAPI = /\/api\/documents\/[0-9a-f]+$/;
+  await page.route(documentAPI, async (route) => {
+    const response = await route.fetch();
+    const doc = await response.json();
+    for (const variant of doc.variants) variant.text_status = "no-text";
+    await route.fulfill({ response, json: doc });
+  });
+  await page.goto(path);
+  await expect(page.getByTestId("pdf-canvas")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Search & text", exact: true })).toHaveCount(0);
+  await page.unroute(documentAPI);
+
+  // The reader's code fails to load: the rest of the page stays.
+  await page.route(/\/assets\/Reader-[^/]*\.js$/, (route) => route.abort());
+  await page.goto(path);
+  await expect(page.getByRole("alert")).toContainText("The reader could not load.");
+  await expect(page.getByRole("link", { name: "Reload the page" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Mutual aid fixture" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Download PDF/ })).toBeVisible();
+});
