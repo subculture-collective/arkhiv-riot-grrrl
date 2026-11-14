@@ -34,8 +34,9 @@ for the commands below.
 
 The `changes` job in `.github/workflows/deploy.yml` compares the `version` in
 `deploy/core-release.json` with the `core_version` that
-`https://riot-grrrl.subcult.tv/api/version` reports. When they differ, when a
-push changes `deploy/core.Dockerfile`, or when a manual run sets `deploy_core`,
+`https://riot-grrrl.subcult.tv/api/version` reports. When they differ, when
+`deploy/core.Dockerfile` changed since the last successful core deploy, or when
+a manual run sets `deploy_core`,
 the `core` job runs before the web job, provided the repository variable
 `CORE_DEPLOY_ENABLED` is `true`. The job:
 
@@ -54,7 +55,11 @@ the `core` job runs before the web job, provided the repository variable
    image's `org.opencontainers.image.version`), and restores the previous image
    if a check fails;
 4. fails with an annotation when the receiver refuses or rolls back, and
-   otherwise checks the live `core_version`.
+   otherwise checks the live `core_version` and records the deploy as a GitHub
+   deployment with task `deploy:core` in the `production` environment. The
+   `changes` job compares `deploy/core.Dockerfile` with that commit, so a wrapper
+   change whose deploy failed carries forward to the next run. Before the first
+   record exists, the core deploys once to create it.
 
 The web job then deploys only `riot-public-web`. The web receiver profile
 (`arkhiv-riot-grrrl`) no longer lists `riot-public-api`, so web deploys never

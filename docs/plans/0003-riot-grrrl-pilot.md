@@ -102,3 +102,22 @@ verification and isolated browser/PostgreSQL gate. PRs also build the deployable
 image without deployment credentials. The [frontend deployment procedure](../automatic-frontend-deployment.md) records the scoped key, live verification and
 rollback. Core pins, collection review, acquisition, database and preservation
 operations retain their separate procedures.
+
+## Shared core cutover, November 14
+
+The owner approved moving the public API to the shared Arkhiv core
+(subculture-collective/arkhiv#54, rehearsed on #49). Since 2026-11-14 22:31 UTC
+riot-grrrl.subcult.tv's `/api` is core 0.4.11 in print compatibility mode with
+its own database, built from `riot_grrrl` with the arkhiv print migration
+scripts; document IDs, variant IDs and URLs are unchanged and the frontend is
+unchanged. The legacy API container is stopped and kept for rollback, which was
+tested once.
+
+Deployment scope grows accordingly: on main, the deploy workflow also deploys
+the pinned core through its own receiver profile and key when the pin or
+`deploy/core.Dockerfile` changes, running a database backup and `migrate`
+first. That job stays off until the repository variable `CORE_DEPLOY_ENABLED`
+is `true`. The frontend job no longer deploys the API in `backend/`. Layout,
+upgrade and rollback steps are in the
+[shared core runbook](../runbooks/shared-core-release.md). Collection review,
+acquisition and preservation keep their separate procedures.
