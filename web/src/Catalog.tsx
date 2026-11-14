@@ -41,6 +41,21 @@ export function Cover({
   );
 }
 
+function SearchHits({ document: doc }: { document: DocumentRecord }) {
+  return doc.hits.map((hit, index) => (
+    <p className="search-hit" key={index}>
+      <a
+        href={`/documents/${doc.id}?read=1&variant=${hit.variant}${hit.page > 0 ? `&page=${hit.page}` : ""}`}
+      >
+        {hit.page > 0 ? `Page ${hit.page}` : "Document text"}
+      </a>
+      : {hit.snippet}
+    </p>
+  ));
+}
+
+type Layout = "grid" | "table";
+
 export default function Catalog({
   collection,
   collectionID,
@@ -58,7 +73,22 @@ export default function Catalog({
   offsetLink: (offset: number) => string;
   favorites: BrowserFavorites;
 }) {
-  const [layout, setLayout] = useState<"grid" | "table">("grid");
+  // The layout lives in the URL so pagination, Back and a new search keep it.
+  const [layout, setLayout] = useState<Layout>(
+    params.get("layout") === "table" ? "table" : "grid",
+  );
+  const chooseLayout = (next: Layout) => {
+    const q = new URLSearchParams(location.search);
+    if (next === "table") q.set("layout", "table");
+    else q.delete("layout");
+    const search = q.toString();
+    history.replaceState(
+      history.state,
+      "",
+      `${location.pathname}${search ? `?${search}` : ""}${location.hash}`,
+    );
+    setLayout(next);
+  };
   const [creators, setCreators] = useState<string[] | null>(null);
   const series = seriesFor(collectionID);
   const activeSeries = series.find((s) => s.slug === params.get("series"));
@@ -250,6 +280,9 @@ export default function Catalog({
             defaultValue={params.get("date_to") || ""}
           />
         </label>
+        {layout === "table" && (
+          <input type="hidden" name="layout" value="table" />
+        )}
         {params.get("language") && (
           <input
             type="hidden"
@@ -262,16 +295,16 @@ export default function Catalog({
         Date bounds match complete original source dates. Partial and unknown
         dates remain visible without a date bound.
       </p>
-      <div role="group" aria-label="Catalog layout">
+      <div role="group" aria-label="Catalog layout" className="catalog-layout">
         <button
           aria-pressed={layout === "grid"}
-          onClick={() => setLayout("grid")}
+          onClick={() => chooseLayout("grid")}
         >
           Grid
         </button>
         <button
           aria-pressed={layout === "table"}
-          onClick={() => setLayout("table")}
+          onClick={() => chooseLayout("table")}
         >
           Table
         </button>
@@ -279,7 +312,9 @@ export default function Catalog({
       {listing?.documents.length === 0 && (
         <p className="notice">
           No documents match these filters.{" "}
-          <a href={`/?collection=${encodeURIComponent(collectionID)}`}>
+          <a
+            href={`/?collection=${encodeURIComponent(collectionID)}${layout === "table" ? "&layout=table" : ""}`}
+          >
             Clear filters
           </a>
         </p>
@@ -302,6 +337,7 @@ export default function Catalog({
                 <tr key={doc.id}>
                   <th scope="row">
                     <a href={`/documents/${doc.id}`}>{doc.metadata.title}</a>
+                    <SearchHits document={doc} />
                   </th>
                   <td>{originalDate(doc)}</td>
                   <td>{doc.metadata.creator || "Unknown"}</td>
@@ -349,16 +385,7 @@ export default function Catalog({
                   Rights: {doc.rights === "unknown" ? "Unknown" : doc.rights} ·
                   No reuse license asserted
                 </p>
-                {doc.hits.map((hit, index) => (
-                  <p className="search-hit" key={index}>
-                    <a
-                      href={`/documents/${doc.id}?read=1&variant=${hit.variant}${hit.page > 0 ? `&page=${hit.page}` : ""}`}
-                    >
-                      {hit.page > 0 ? `Page ${hit.page}` : "Document text"}
-                    </a>
-                    : {hit.snippet}
-                  </p>
-                ))}
+                <SearchHits document={doc} />
               </div>
             </article>
           ))}
