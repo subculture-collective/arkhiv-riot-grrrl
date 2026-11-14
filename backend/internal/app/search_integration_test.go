@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"git.subcult.tv/subculture-collective/arkhiv-riot-grrrl/internal/catalog"
 	"git.subcult.tv/subculture-collective/arkhiv-riot-grrrl/internal/fixtures"
@@ -84,19 +85,21 @@ func TestArchiveIntegrationSearch(t *testing.T) {
 		}
 	}
 
-	// A match far into the page text must appear in the snippet.
+	// A match far into the page text must appear in the snippet, and OCR junk
+	// runs (one long token, then punctuation that ts_headline does not count
+	// as words) must not make the snippet unbounded.
 	id := catalog.ID("fixture-zines", "synthetic", "Mutual aid fixture")
 	doc, err := db.Get(ctx, id, true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	long := strings.Repeat("filler words before the match ", 100) + "Solidarity knownword appears here. " + strings.Repeat("trailing text after ", 100)
+	long := strings.Repeat("filler words before the match ", 100) + strings.Repeat("x", 2000) + " " + strings.Repeat("-", 2000) + " Solidarity knownword appears here. " + strings.Repeat("trailing text after ", 100)
 	if _, err = db.Pool.Exec(ctx, `UPDATE page_text SET text=$2 WHERE asset_sha=$1 AND page=2`, doc.Variants[0].SHA, long); err != nil {
 		t.Fatal(err)
 	}
 	checkSnippet := func(where, snippet string) {
 		t.Helper()
-		if !strings.Contains(snippet, "knownword") || len(snippet) > 400 || strings.Contains(snippet, "<b>") {
+		if !strings.Contains(snippet, "knownword") || utf8.RuneCountInString(snippet) > 400 || strings.Contains(snippet, "<b>") {
 			t.Fatalf("%s snippet lacks the match or is unbounded: %q", where, snippet)
 		}
 	}

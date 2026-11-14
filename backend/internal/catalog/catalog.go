@@ -175,9 +175,17 @@ type Document struct {
 	Hits         []Hit          `json:"hits"`
 }
 
-// HitSnippet is the SQL for a search hit's snippet: up to 40 words of page
-// text around the first match of the query in $2, as plain text.
-const HitSnippet = `ts_headline('simple',t.text,plainto_tsquery('simple',$2),'MaxFragments=1,MaxWords=40,MinWords=15,StartSel="",StopSel=""')`
+// HitSnippet returns the SQL for a search hit's snippet of t.text, as plain
+// text of at most 400 characters. ts_headline picks the best-matching passage
+// of up to 40 words for the query bound to param (for example "$2"). Words are
+// not characters, so a long junk run in OCR text could still make that passage
+// huge: the snippet is cut to a 400-character window that starts 150
+// characters before the first highlighted match. ts_headline drops tag-like
+// tokens from the page text, so the only <b> tags left are its own highlights.
+// It parses the whole page text, about 85 ms per MB.
+func HitSnippet(param string) string {
+	return `(SELECT substr(regexp_replace(h,'</?b>','','g'),greatest(1,strpos(h,'<b>')-150),400) FROM (SELECT ts_headline('simple',t.text,plainto_tsquery('simple',` + param + `),'MaxFragments=1,MaxWords=40,MinWords=15') AS h) s)`
+}
 
 type Hit struct {
 	Page    int    `json:"page"`
@@ -310,7 +318,7 @@ func (d *DB) List(ctx context.Context, c, q, subject, language string, limit, of
 			return nil, 0, e
 		}
 		if q != "" {
-			rs, e := d.Pool.Query(ctx, `SELECT t.page,v.id,`+HitSnippet+` FROM variants v JOIN page_text t ON t.asset_sha=v.asset_sha WHERE v.document_id=$1 AND (NOT $3 OR v.public_approved) AND t.search @@ plainto_tsquery('simple',$2) ORDER BY t.page,v.id LIMIT 5`, id, q, d.PublicOnly)
+			rs, e := d.Pool.Query(ctx, `SELECT t.page,v.id,`+HitSnippet("$2")+` FROM variants v JOIN page_text t ON t.asset_sha=v.asset_sha WHERE v.document_id=$1 AND (NOT $3 OR v.public_approved) AND t.search @@ plainto_tsquery('simple',$2) ORDER BY t.page,v.id LIMIT 5`, id, q, d.PublicOnly)
 			if e != nil {
 				return nil, 0, e
 			}
