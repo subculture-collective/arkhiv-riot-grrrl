@@ -256,7 +256,9 @@ test("hashed assets, including the pdf.js worker, are cached for a year", async 
     expect(response.headers()["content-security-policy"], path).toContain("default-src 'self'");
   }
   for (const path of ["/assets/missing-0000.js", "/assets/missing-0000.mjs"]) {
-    expect((await request.get(path)).status(), path).toBe(404);
+    const missing = await request.get(path);
+    expect(missing.status(), path).toBe(404);
+    expect(missing.headers()["cache-control"] ?? "", path).not.toContain("immutable");
   }
 });
 
