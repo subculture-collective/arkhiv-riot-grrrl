@@ -1269,6 +1269,12 @@ main:has(.document) .masthead {
 .document-reader .reader[data-fullscreen] > .reader-controls {
   order: 2;
 }
+/* Landscape phones are short; a smaller panel leaves more of the page in view. */
+@media (max-height: 500px) {
+  .document-reader .reader[data-fullscreen] > .reader-panel {
+    max-height: 30dvh;
+  }
+}
 .document-reader .reader[data-fullscreen] > .reader-page {
   flex: 1 1 0;
   min-height: 0;

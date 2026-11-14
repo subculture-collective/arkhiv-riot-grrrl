@@ -181,7 +181,7 @@ test("search panel leaves every reader control reachable, in and out of full scr
   const blocked = () => page.evaluate((controls) => Object.entries(controls).filter(([, selector]) => {
     const control = document.querySelector(selector)!;
     const box = control.getBoundingClientRect();
-    if (box.top < 0 || box.bottom > innerHeight || box.right > innerWidth) return true;
+    if (box.left < 0 || box.top < 0 || box.bottom > innerHeight || box.right > innerWidth) return true;
     const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
     return !hit || !control.contains(hit);
   }).map(([name]) => name), controls);
@@ -205,11 +205,13 @@ test("search panel leaves every reader control reachable, in and out of full scr
     filler.textContent = "long page text ".repeat(500);
     panel.append(filler);
   });
-  for (const [width, height] of [[1280, 900], [820, 1180], [390, 780], [320, 640]]) {
+  for (const [width, height] of [[1280, 900], [820, 1180], [390, 780], [375, 740], [320, 640], [740, 360]]) {
     await page.setViewportSize({ width, height });
     await expect.poll(blocked, { message: `full screen at ${width}px` }).toEqual([]);
     expect(await findInsidePanel(), `Find inside the panel at ${width}px`).toBeTruthy();
   }
+  // On a landscape phone the page keeps a usable share of the height.
+  expect(await page.getByTestId("pdf-canvas").evaluate((canvas) => canvas.closest(".reader-page")!.getBoundingClientRect().height)).toBeGreaterThan(120);
   await page.getByRole("button", { name: "Next page", exact: true }).click();
   await expect(page.getByLabel("Page number")).toHaveValue("2");
   await page.getByRole("button", { name: "Exit full screen", exact: true }).click();
