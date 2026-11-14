@@ -3,6 +3,8 @@ import Catalog from "./Catalog";
 import SeriesIndex from "./SeriesIndex";
 import {
   allDocuments,
+  InvalidRequestError,
+  invalidRequest,
   issueLabel,
   seriesFor,
   seriesLink,
@@ -61,6 +63,7 @@ export interface Listing {
 class NotFoundError extends Error {}
 async function json<T>(url: string, signal: AbortSignal): Promise<T> {
   const r = await fetch(url, { signal });
+  if (r.status === 400) throw await invalidRequest(r);
   if (r.status === 404)
     throw new NotFoundError(
       "This zine is not in the archive. The link may be mistyped, or the zine may no longer be public.",
@@ -176,6 +179,8 @@ export default function App() {
   const [error, setError] = useState("");
   const [notFound, setNotFound] = useState(false);
   const [staleEdition, setStaleEdition] = useState(false);
+  const [listingError, setListingError] = useState("");
+  const [missingCollection, setMissingCollection] = useState("");
   const [loading, setLoading] = useState(true);
   const [collectionID, setCollectionID] = useState(
     params.get("collection") || "",
@@ -213,6 +218,11 @@ export default function App() {
       } else if (all.length) {
         const selected =
           new URLSearchParams(location.search).get("collection") || all[0].id;
+        if (!all.some((c) => c.id === selected)) {
+          setCollectionID("");
+          setMissingCollection(selected);
+          return;
+        }
         setCollectionID(selected);
         if (seriesPage) return;
         const q = new URLSearchParams(location.search);
@@ -221,16 +231,22 @@ export default function App() {
           (s) => s.slug === q.get("series"),
         );
         const [data, facets] = await Promise.all([
-          series
+          (series
             ? seriesListing(q, series.issues.map((issue) => issue.id))
-            : json<Listing>(`/api/documents?${q}`, controller.signal),
+            : json<Listing>(`/api/documents?${q}`, controller.signal)
+          ).catch((e) => {
+            // Invalid filters keep the form on screen with the API's reason.
+            if (e instanceof InvalidRequestError) return e;
+            throw e;
+          }),
           json<{ subjects: string[] }>(
             `/api/facets?collection=${encodeURIComponent(selected)}`,
             controller.signal,
           ),
         ]);
         if (active) {
-          setListing(data);
+          if (data instanceof InvalidRequestError) setListingError(data.message);
+          else setListing(data);
           setSubjects(facets.subjects);
         }
       }
@@ -282,7 +298,7 @@ export default function App() {
     let canonical = document.querySelector<HTMLLinkElement>(
       'link[rel="canonical"]',
     );
-    if (notFound) {
+    if (notFound || missingCollection) {
       document.title = "Not found · Riot Grrrl Archive";
       canonical?.remove();
       if (!robots) {
@@ -310,7 +326,7 @@ export default function App() {
           : "/",
       publicURL,
     ).href;
-  }, [doc, collection, collectionID, id, seriesPage, notFound]);
+  }, [doc, collection, collectionID, id, seriesPage, notFound, missingCollection]);
   const offsetLink = (n: number) => {
     const q = new URLSearchParams(location.search);
     q.set("collection", collectionID);
@@ -380,7 +396,19 @@ export default function App() {
               </a>
             ))}
           </nav>}
-          {doc ? (
+          {missingCollection ? (
+            <section className="catalog" id="catalog">
+              <div className="front-heading">
+                <h1>Collection not found</h1>
+              </div>
+              <p role="alert" className="notice">
+                There is no collection called “{missingCollection}”.{" "}
+                <a href={`/?collection=${encodeURIComponent(collections[0].id)}`}>
+                  Browse {collections[0].name}
+                </a>
+              </p>
+            </section>
+          ) : doc ? (
             <article className="document">
               {requestedVariant && !variant && (
                 <p role="alert" className="notice">
@@ -586,6 +614,7 @@ export default function App() {
               collection={collection}
               collectionID={collectionID}
               listing={listing}
+              listingError={listingError}
               subjects={subjects}
               params={params}
               offsetLink={offsetLink}

@@ -60,6 +60,7 @@ export default function Catalog({
   collection,
   collectionID,
   listing,
+  listingError = "",
   subjects,
   params,
   offsetLink,
@@ -68,6 +69,7 @@ export default function Catalog({
   collection?: Collection;
   collectionID: string;
   listing: Listing | null;
+  listingError?: string;
   subjects: string[];
   params: URLSearchParams;
   offsetLink: (offset: number) => string;
@@ -106,14 +108,28 @@ export default function Catalog({
       .catch(() => setCreators(null));
   };
   const riot = true;
+  // The API ignores surrounding spaces, so a blank query is no query.
+  const query = params.get("q")?.trim() || "";
   const unfiltered =
-    !params.get("q") &&
+    !query &&
     !params.get("subject") &&
     !params.get("creator") &&
     !params.get("series") &&
     !params.get("date_from") &&
     !params.get("date_to") &&
     !listing?.offset;
+  const filtered = Boolean(
+    query ||
+      params.get("subject") ||
+      params.get("creator") ||
+      params.get("series") ||
+      params.get("date_from") ||
+      params.get("date_to") ||
+      params.get("language"),
+  );
+  const lastPage = listing?.limit
+    ? Math.max(0, Math.floor((listing.total - 1) / listing.limit) * listing.limit)
+    : 0;
   const featured = unfiltered ? listing?.documents[0] : undefined;
   const branded =
     collection?.name ===
@@ -199,16 +215,17 @@ export default function Catalog({
         <h2>
           {activeSeries
             ? activeSeries.name
-            : params.get("q") || params.get("subject")
+            : query || params.get("subject")
               ? "Search results"
               : "The collection"}
         </h2>
-        <p role="status">
-          {activeSeries
-            ? `${listing?.total || 0} ${listing?.total === 1 ? "document" : "documents"} in this series`
-            : `${listing?.total || 0} ${listing?.total === 1 ? "document" : "documents"}`}
-          {params.get("q") ? ` matching “${params.get("q")}”` : ""}
-        </p>
+        {listing && (
+          <p role="status">
+            {listing.total} {listing.total === 1 ? "document" : "documents"}
+            {activeSeries ? " in this series" : ""}
+            {query ? ` matching “${query}”` : ""}
+          </p>
+        )}
         {activeSeries && (
           <p className="series-links">
             <a href={`/series?collection=${encodeURIComponent(collectionID)}`}>
@@ -219,6 +236,13 @@ export default function Catalog({
           </p>
         )}
       </div>
+      {listingError && (
+        <p role="alert" className="notice">
+          {listingError.charAt(0).toUpperCase() +
+            listingError.slice(1).replace(/[.!?]?$/, ".")}{" "}
+          <a href={everyDocument}>Clear filters</a>
+        </p>
+      )}
       <form method="get" action="/" className="search">
         <input type="hidden" name="collection" value={collectionID} />
         <label>
@@ -312,10 +336,19 @@ export default function Catalog({
           Table
         </button>
       </div>
-      {listing?.documents.length === 0 && (
+      {listing?.total === 0 &&
+        (filtered ? (
+          <p className="notice">
+            No documents match these filters.{" "}
+            <a href={everyDocument}>Clear filters</a>
+          </p>
+        ) : (
+          <p className="notice">This collection has no documents yet.</p>
+        ))}
+      {listing && listing.total > 0 && listing.documents.length === 0 && (
         <p className="notice">
-          No documents match these filters.{" "}
-          <a href={everyDocument}>Clear filters</a>
+          This page is past the end of the results.{" "}
+          <a href={offsetLink(0)}>Go to the first page</a>
         </p>
       )}
       {layout === "table" ? (
@@ -393,7 +426,11 @@ export default function Catalog({
       {listing && (
         <nav className="pagination" aria-label="Catalog pages">
           {listing.offset > 0 && (
-            <a href={offsetLink(Math.max(0, listing.offset - listing.limit))}>
+            <a
+              href={offsetLink(
+                Math.max(0, Math.min(listing.offset - listing.limit, lastPage)),
+              )}
+            >
               Previous
             </a>
           )}
