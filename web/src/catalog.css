@@ -814,6 +814,7 @@ footer {
 .share-more summary:hover {
   background: #fff;
 }
+/* Repeats .favorite-button's pressed fill so it beats the hover rule above. */
 .document-actions button[aria-pressed="true"] {
   background: #231722;
   color: #f8e4cf;
