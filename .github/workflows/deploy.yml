@@ -27,7 +27,7 @@ env:
 
 jobs:
   deploy:
-    name: Build images and deploy frontend
+    name: Build images and deploy frontend and API
     if: github.repository == 'subculture-collective/arkhiv-riot-grrrl' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     environment: production
@@ -58,7 +58,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/deploy"
           printf '%s\n' "$DEPLOY_KEY" > "$RUNNER_TEMP/deploy/key"
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/deploy/known_hosts"
-      - name: Reuse an already accepted frontend artifact
+      - name: Reuse already accepted artifacts
         id: artifact
         run: |
           set -euo pipefail
@@ -70,21 +70,28 @@ jobs:
           # to Gitea every minute, so wait while the revision has not arrived.
           for attempt in $(seq 1 20); do
             # shellcheck disable=SC2029
-            if ssh "${ssh_args[@]}" "artifact $DEPLOY_REVISION riot-public-web" > "$d/artifact.json" 2> "$d/err"; then break; fi
+            if ssh "${ssh_args[@]}" "artifact $DEPLOY_REVISION riot-public-web" > "$d/artifact.json" 2> "$d/err" &&
+              ssh "${ssh_args[@]}" "artifact $DEPLOY_REVISION riot-public-api" > "$d/artifact-api.json" 2> "$d/err"; then break; fi
             if grep -q "no longer the current main" "$d/err" && [ "$attempt" -lt 20 ]; then
               echo "Gitea has not received $DEPLOY_REVISION yet; waiting 30 s ($attempt/20)"; sleep 30; continue
             fi
             cat "$d/err" >&2; exit 1
           done
-          python3 - "$d/artifact.json" "$GITHUB_OUTPUT" <<'PYCODE'
+          python3 - "$d/artifact.json" "$d/artifact-api.json" "$GITHUB_OUTPUT" <<'PYCODE'
           import json, re, sys
           from pathlib import Path
-          info = json.loads(Path(sys.argv[1]).read_text())
-          available = info.get("available") is True
-          if available:
-              assert re.fullmatch(r"[0-9a-f]{64}", info.get("html_sha256", ""))
-          with Path(sys.argv[2]).open("a") as output:
-              output.write("available=" + str(available).lower() + "\n")
+          web = json.loads(Path(sys.argv[1]).read_text())
+          api = json.loads(Path(sys.argv[2]).read_text())
+          web_available = web.get("available") is True
+          api_available = api.get("available") is True
+          if web_available:
+              assert re.fullmatch(r"[0-9a-f]{64}", web.get("html_sha256", ""))
+          # A retry must not rebuild an image the receiver already accepted for
+          # this commit: builds are not reproducible, so it would be refused.
+          with Path(sys.argv[3]).open("a") as output:
+              output.write("web=" + str(web_available).lower() + "\n")
+              output.write("api=" + str(api_available).lower() + "\n")
+              output.write("available=" + str(web_available and api_available).lower() + "\n")
           PYCODE
       - name: Build deployable images from the verified revision
         if: steps.artifact.outputs.available != 'true'
@@ -103,6 +110,7 @@ jobs:
           retry docker build --network=host -f web/Dockerfile --build-arg CORE_UPSTREAM=riot-public-api:8080 --build-arg VITE_PUBLIC_URL=https://riot-grrrl.subcult.tv --label "org.opencontainers.image.revision=$GITHUB_SHA" --label "org.opencontainers.image.source=https://git.subcult.tv/subculture-collective/arkhiv-riot-grrrl" -t "$WEB_IMAGE:$GITHUB_SHA" web
           retry docker build --network=host -f backend/Dockerfile --build-arg "ARKHIV_REVISION=$GITHUB_SHA" --label "org.opencontainers.image.revision=$GITHUB_SHA" --label "org.opencontainers.image.source=https://git.subcult.tv/subculture-collective/arkhiv-riot-grrrl" -t "$API_IMAGE:$GITHUB_SHA" .
           docker tag "$WEB_IMAGE:$GITHUB_SHA" "fleet-deploy/arkhiv-riot-grrrl/riot-public-web:$DEPLOY_REVISION"
+          docker tag "$API_IMAGE:$GITHUB_SHA" "fleet-deploy/arkhiv-riot-grrrl/riot-public-api:$DEPLOY_REVISION"
           docker run --rm --network none --entrypoint nginx "$WEB_IMAGE:$GITHUB_SHA" -t
       - name: Publish the images to GitHub Packages
         if: steps.artifact.outputs.available != 'true'
@@ -115,9 +123,10 @@ jobs:
             docker push "$image"
             echo "published $(docker inspect --format '{{index .RepoDigests 0}}' "$image")"
           done
-      - name: Deploy the built image and verify public HTML
+      - name: Deploy the built images and verify public HTML
         env:
-          REUSE_ARTIFACT: ${{ steps.artifact.outputs.available }}
+          REUSE_WEB: ${{ steps.artifact.outputs.web }}
+          REUSE_API: ${{ steps.artifact.outputs.api }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$DEPLOY_REVISION"
@@ -125,10 +134,15 @@ jobs:
           ssh_args=(-F /dev/null -i "$d/key" -o ControlPath=none -o ControlMaster=no -o BatchMode=yes -o IdentitiesOnly=yes
             -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$d/known_hosts" -o ConnectTimeout=15 "$TARGET")
           ssh "${ssh_args[@]}" status
-          image="fleet-deploy/arkhiv-riot-grrrl/riot-public-web:$DEPLOY_REVISION"
-          if [[ "$REUSE_ARTIFACT" != true ]]; then
+          # The receiver deploys both services together and refuses until both
+          # images for this revision have been received.
+          if [[ "$REUSE_WEB" != true ]]; then
             # shellcheck disable=SC2029
-            docker save "$image" | ssh "${ssh_args[@]}" "receive $DEPLOY_REVISION riot-public-web"
+            docker save "fleet-deploy/arkhiv-riot-grrrl/riot-public-web:$DEPLOY_REVISION" | ssh "${ssh_args[@]}" "receive $DEPLOY_REVISION riot-public-web"
+          fi
+          if [[ "$REUSE_API" != true ]]; then
+            # shellcheck disable=SC2029
+            docker save "fleet-deploy/arkhiv-riot-grrrl/riot-public-api:$DEPLOY_REVISION" | ssh "${ssh_args[@]}" "receive $DEPLOY_REVISION riot-public-api"
           fi
           # shellcheck disable=SC2029
           ssh "${ssh_args[@]}" "deploy $DEPLOY_REVISION"
