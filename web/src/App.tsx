@@ -250,7 +250,7 @@ export default function App() {
                 favorites={favorites}
               />
               <ShareControls url={() => location.href} title={doc.metadata.title} />
-              {params.get("read") === "1" && (
+              {variant && (
                 <button aria-pressed={focus} onClick={() => setFocus(!focus)}>
                   {focus ? "Exit reading focus" : "Reading focus"}
                 </button>
@@ -324,7 +324,7 @@ export default function App() {
                   </article>
                 ))}
               </div>
-              {params.get("read") === "1" && variant && (
+              {variant && (
                 <Suspense fallback={<p role="status">Loading reader…</p>}>
                   <Reader
                     variant={variant}

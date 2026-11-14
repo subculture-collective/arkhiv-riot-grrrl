@@ -123,5 +123,7 @@ test("selected identity fits the configured catalog", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Open Mutual aid fixture", exact: true }).first()).toBeVisible();
   await page.getByRole("link", { name: "Open Mutual aid fixture", exact: true }).first().click();
   await expect(page.getByRole("link", { name: "Read on site", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Page number")).toHaveValue("1");
+  await expect(page.getByTestId("pdf-canvas")).toBeVisible();
   await expect(page.getByText("No reuse license is asserted.", { exact: false })).toBeVisible();
 });
