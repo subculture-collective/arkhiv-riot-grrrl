@@ -327,6 +327,19 @@ test("invalid filters, stale pages and unknown collections explain themselves", 
   await expect(page.getByRole("alert")).toHaveCount(0);
   await expect(page.getByLabel("Original date from")).toHaveValue("");
 
+  // A series view fetches the listing another way and must explain itself too.
+  await page.goto("/?collection=fixture-zines&series=fixture-series");
+  await page.getByLabel("Original date from").fill("2000-01-01");
+  await page.getByLabel("Original date to").fill("1990-01-01");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("The original-date range is reversed.");
+  await expect(search).toBeVisible();
+  await expect(page.getByText("could not load")).toHaveCount(0);
+  await page.goto("/?collection=fixture-zines&series=fixture-series&date_from=1990-13-01");
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(search).toBeVisible();
+  await expect(page.getByText("could not load")).toHaveCount(0);
+
   await page.goto("/?collection=fixture-zines&offset=abc");
   await expect(page.getByRole("alert")).toContainText("page offset must be a whole number");
   await expect(search).toBeVisible();

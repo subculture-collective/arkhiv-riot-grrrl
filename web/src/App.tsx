@@ -3,6 +3,8 @@ import Catalog from "./Catalog";
 import SeriesIndex from "./SeriesIndex";
 import {
   allDocuments,
+  InvalidRequestError,
+  invalidRequest,
   issueLabel,
   seriesFor,
   seriesLink,
@@ -59,18 +61,9 @@ export interface Listing {
 }
 // A 404 is permanent: retrying the same link cannot help, so the page offers the catalog instead.
 class NotFoundError extends Error {}
-// A 400 carries the API's reason so the catalog can show it beside the form.
-class InvalidRequestError extends Error {}
 async function json<T>(url: string, signal: AbortSignal): Promise<T> {
   const r = await fetch(url, { signal });
-  if (r.status === 400) {
-    const body = await r.json().catch(() => null);
-    throw new InvalidRequestError(
-      typeof body?.error === "string" && body.error
-        ? body.error
-        : "this request is not valid",
-    );
-  }
+  if (r.status === 400) throw await invalidRequest(r);
   if (r.status === 404)
     throw new NotFoundError(
       "This zine is not in the archive. The link may be mistyped, or the zine may no longer be public.",

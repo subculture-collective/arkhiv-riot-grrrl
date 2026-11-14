@@ -238,7 +238,8 @@ export default function Catalog({
       </div>
       {listingError && (
         <p role="alert" className="notice">
-          {listingError.charAt(0).toUpperCase() + listingError.slice(1)}.{" "}
+          {listingError.charAt(0).toUpperCase() +
+            listingError.slice(1).replace(/[.!?]?$/, ".")}{" "}
           <a href={everyDocument}>Clear filters</a>
         </p>
       )}

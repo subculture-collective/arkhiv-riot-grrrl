@@ -1,6 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import data from "./series.json";
-import { creatorNames, issueCount, issueLabel, seriesOf } from "./series";
+import {
+  allDocuments,
+  creatorNames,
+  InvalidRequestError,
+  issueCount,
+  issueLabel,
+  seriesOf,
+} from "./series";
 
 describe("curated series", () => {
   it("gives each series a unique slug and each document one series", () => {
@@ -42,5 +49,25 @@ describe("creator suggestions", () => {
         undefined,
       ]),
     ).toEqual(["Greta Drummond-Gillett", "Layla Gibbon", "Lucy McKenzie"]);
+  });
+});
+
+describe("allDocuments", () => {
+  it("passes on the API's reason for an invalid filter", async () => {
+    vi.stubGlobal("fetch", async () =>
+      new Response(
+        JSON.stringify({ error: "the original-date range is reversed" }),
+        { status: 400 },
+      ),
+    );
+    try {
+      const request = allDocuments(
+        new URLSearchParams({ collection: "c", date_from: "2000", date_to: "1990" }),
+      );
+      await expect(request).rejects.toBeInstanceOf(InvalidRequestError);
+      await expect(request).rejects.toThrow("the original-date range is reversed");
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

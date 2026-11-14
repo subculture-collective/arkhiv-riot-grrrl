@@ -46,6 +46,17 @@ export function creatorNames(creators: (string | undefined)[]) {
   return [...names.values()].sort((a, b) => a.localeCompare(b));
 }
 
+// A 400 carries the API's reason so the catalog can show it beside the form.
+export class InvalidRequestError extends Error {}
+export async function invalidRequest(response: Response) {
+  const body = await response.json().catch(() => null);
+  return new InvalidRequestError(
+    typeof body?.error === "string" && body.error
+      ? body.error
+      : "this request is not valid",
+  );
+}
+
 interface CatalogPage<T> {
   documents: T[];
   total: number;
@@ -66,6 +77,7 @@ export function allDocuments<T>(query: URLSearchParams): Promise<T[]> {
       q.set("limit", "50");
       q.set("offset", String(offset));
       const response = await fetch(`/api/documents?${q}`);
+      if (response.status === 400) throw await invalidRequest(response);
       if (!response.ok) throw new Error("The archive could not load.");
       return (await response.json()) as CatalogPage<unknown>;
     };
