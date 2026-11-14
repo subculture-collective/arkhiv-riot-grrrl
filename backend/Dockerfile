@@ -10,6 +10,7 @@ WORKDIR /app
 COPY --from=build /out/ /app/
 COPY migrations/ /app/migrations/
 COPY collections/ /app/collections/
-ENV MIGRATIONS_DIR=/app/migrations ARKHIV_ARCHIVE=/data/archive
+ARG ARKHIV_REVISION=
+ENV MIGRATIONS_DIR=/app/migrations ARKHIV_ARCHIVE=/data/archive ARKHIV_REVISION=$ARKHIV_REVISION
 EXPOSE 8080
 CMD ["/app/api"]
