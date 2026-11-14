@@ -90,8 +90,9 @@ jobs:
         if: steps.artifact.outputs.available != 'true'
         run: |
           set -euo pipefail
-          # Runner DNS inside build containers fails now and then (EAI_AGAIN);
-          # retry the build twice before giving up.
+          # On some runners DNS inside build containers fails for the whole job
+          # (EAI_AGAIN), so RUN steps use the host network and its resolver; the
+          # retry covers one-off registry or network errors.
           retry() { for wait in 30 60 0; do "$@" && return 0; [ "$wait" = 0 ] && return 1; echo "Build failed; retrying in ${wait}s" >&2; sleep "$wait"; done; }
           test "$(git rev-parse HEAD)" = "$DEPLOY_REVISION"
           umask 077
@@ -99,8 +100,8 @@ jobs:
           trap 'rm -rf "$auth_dir"' EXIT
           export DOCKER_BUILDKIT=1
           # The fleet-deploy receiver identifies the application by this Gitea source label.
-          retry docker build -f web/Dockerfile --build-arg CORE_UPSTREAM=riot-public-api:8080 --build-arg VITE_PUBLIC_URL=https://riot-grrrl.subcult.tv --label "org.opencontainers.image.revision=$GITHUB_SHA" --label "org.opencontainers.image.source=https://git.subcult.tv/subculture-collective/arkhiv-riot-grrrl" -t "$WEB_IMAGE:$GITHUB_SHA" web
-          retry docker build -f backend/Dockerfile --label "org.opencontainers.image.revision=$GITHUB_SHA" --label "org.opencontainers.image.source=https://git.subcult.tv/subculture-collective/arkhiv-riot-grrrl" -t "$API_IMAGE:$GITHUB_SHA" .
+          retry docker build --network=host -f web/Dockerfile --build-arg CORE_UPSTREAM=riot-public-api:8080 --build-arg VITE_PUBLIC_URL=https://riot-grrrl.subcult.tv --label "org.opencontainers.image.revision=$GITHUB_SHA" --label "org.opencontainers.image.source=https://git.subcult.tv/subculture-collective/arkhiv-riot-grrrl" -t "$WEB_IMAGE:$GITHUB_SHA" web
+          retry docker build --network=host -f backend/Dockerfile --label "org.opencontainers.image.revision=$GITHUB_SHA" --label "org.opencontainers.image.source=https://git.subcult.tv/subculture-collective/arkhiv-riot-grrrl" -t "$API_IMAGE:$GITHUB_SHA" .
           docker tag "$WEB_IMAGE:$GITHUB_SHA" "fleet-deploy/arkhiv-riot-grrrl/riot-public-web:$DEPLOY_REVISION"
           docker run --rm --network none --entrypoint nginx "$WEB_IMAGE:$GITHUB_SHA" -t
       - name: Publish the images to GitHub Packages
