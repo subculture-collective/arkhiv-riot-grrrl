@@ -174,6 +174,19 @@ type Document struct {
 	Variants     []Variant      `json:"variants"`
 	Hits         []Hit          `json:"hits"`
 }
+
+// HitSnippet returns the SQL for a search hit's snippet of t.text, as plain
+// text of at most 400 characters. ts_headline picks the best-matching passage
+// of up to 40 words for the query bound to param (for example "$2"). Words are
+// not characters, so a long junk run in OCR text could still make that passage
+// huge: the snippet is cut to a 400-character window that starts 150
+// characters before the first highlighted match. ts_headline drops tag-like
+// tokens from the page text, so the only <b> tags left are its own highlights.
+// It parses the whole page text, about 85 ms per MB.
+func HitSnippet(param string) string {
+	return `(SELECT substr(regexp_replace(h,'</?b>','','g'),greatest(1,strpos(h,'<b>')-150),400) FROM (SELECT ts_headline('simple',t.text,plainto_tsquery('simple',` + param + `),'MaxFragments=1,MaxWords=40,MinWords=15') AS h) s)`
+}
+
 type Hit struct {
 	Page    int    `json:"page"`
 	Variant string `json:"variant"`
@@ -273,7 +286,7 @@ func (d *DB) List(ctx context.Context, c, q, subject, language string, limit, of
 	if err := filter.Validate(); err != nil {
 		return nil, 0, err
 	}
-	const where = `FROM documents d WHERE ($1='' OR collection_id=$1) AND (NOT $2 OR published) AND (NOT $6 OR (published AND EXISTS(SELECT 1 FROM variants WHERE document_id=d.id AND public_approved))) AND ($3='' OR to_tsvector('simple',(CASE WHEN $6 THEN jsonb_build_object('title',(metadata||overrides)->'title','creator',(metadata||overrides)->'creator','date',(metadata||overrides)->'date','language',(metadata||overrides)->'language','subjects',(metadata||overrides)->'subjects') ELSE metadata||overrides END)::text) @@ plainto_tsquery('simple',$3) OR EXISTS(SELECT 1 FROM variants v JOIN page_text t ON t.asset_sha=v.asset_sha WHERE v.document_id=d.id AND (NOT $6 OR v.public_approved) AND t.search @@ plainto_tsquery('simple',$3))) AND ($4='' OR (metadata||overrides)->'subjects' ? $4) AND ($5='' OR (metadata||overrides)->>'language'=$5)`
+	const where = `FROM documents d WHERE ($1='' OR collection_id=$1) AND (NOT $2 OR published) AND (NOT $6 OR (published AND EXISTS(SELECT 1 FROM variants WHERE document_id=d.id AND public_approved))) AND ($3='' OR jsonb_to_tsvector('simple',CASE WHEN $6 THEN jsonb_build_object('title',(metadata||overrides)->'title','creator',(metadata||overrides)->'creator','date',(metadata||overrides)->'date','language',(metadata||overrides)->'language','subjects',(metadata||overrides)->'subjects') ELSE metadata||overrides END,'["string","numeric"]') @@ plainto_tsquery('simple',$3) OR EXISTS(SELECT 1 FROM variants v JOIN page_text t ON t.asset_sha=v.asset_sha WHERE v.document_id=d.id AND (NOT $6 OR v.public_approved) AND t.search @@ plainto_tsquery('simple',$3))) AND ($4='' OR (metadata||overrides)->'subjects' ? $4) AND ($5='' OR (metadata||overrides)->>'language'=$5)`
 	const additional = ` AND ($7='' OR position(lower($7) in lower(COALESCE((metadata||overrides)->>'creator','')))>0) AND ($8='' OR (metadata->>'date' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' AND metadata->>'date'>=$8)) AND ($9='' OR (metadata->>'date' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' AND metadata->>'date'<=$9))`
 	args := []any{c, public, q, subject, language, d.PublicOnly, filter.Creator, filter.DateFrom, filter.DateTo}
 	var total int
@@ -305,7 +318,7 @@ func (d *DB) List(ctx context.Context, c, q, subject, language string, limit, of
 			return nil, 0, e
 		}
 		if q != "" {
-			rs, e := d.Pool.Query(ctx, `SELECT t.page,v.id,left(t.text,350) FROM variants v JOIN page_text t ON t.asset_sha=v.asset_sha WHERE v.document_id=$1 AND (NOT $3 OR v.public_approved) AND t.search @@ plainto_tsquery('simple',$2) ORDER BY t.page,v.id LIMIT 5`, id, q, d.PublicOnly)
+			rs, e := d.Pool.Query(ctx, `SELECT t.page,v.id,`+HitSnippet("$2")+` FROM variants v JOIN page_text t ON t.asset_sha=v.asset_sha WHERE v.document_id=$1 AND (NOT $3 OR v.public_approved) AND t.search @@ plainto_tsquery('simple',$2) ORDER BY t.page,v.id LIMIT 5`, id, q, d.PublicOnly)
 			if e != nil {
 				return nil, 0, e
 			}
