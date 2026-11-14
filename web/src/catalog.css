@@ -238,6 +238,25 @@ main {
 .search-hit {
   margin-top: 12px;
 }
+.publication-table-wrap .search-hit {
+  font-size: 13px;
+  font-weight: 400;
+}
+/* Segmented control: the chosen layout is filled, the other is outlined. */
+.catalog-layout {
+  display: inline-flex;
+  border: 2px solid var(--accent);
+}
+.catalog-layout button {
+  padding: 8px 16px;
+}
+.catalog-layout button[aria-pressed="false"] {
+  background: #fffdf7;
+  color: var(--accent);
+}
+.catalog-layout button[aria-pressed="false"]:hover {
+  background: #f7ebda;
+}
 .document {
   padding-top: 28px;
 }

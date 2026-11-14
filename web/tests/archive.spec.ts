@@ -110,6 +110,37 @@ test("cover fallback, scoped filters and narrow catalog layout", async ({ page }
   await expect(page.locator('input[name="collection"]')).toHaveValue("fixture-zines");
 });
 
+test("table layout is visibly selected and survives pages, Back and search", async ({ page }) => {
+  // The fixture holds one document; report more so Next appears with limit=1.
+  await page.route("**/api/documents?*", async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, json: { ...(await response.json()), total: 3 } });
+  });
+  const layout = page.getByRole("group", { name: "Catalog layout" });
+  const grid = layout.getByRole("button", { name: "Grid", exact: true });
+  const table = layout.getByRole("button", { name: "Table", exact: true });
+  const background = (button: typeof grid) => button.evaluate(element => getComputedStyle(element).backgroundColor);
+  await page.goto("/?collection=fixture-zines&limit=1");
+  await table.click();
+  await page.mouse.move(0, 0);
+  await expect(table).toHaveAttribute("aria-pressed", "true");
+  expect(await background(table)).not.toBe(await background(grid));
+  await expect(page).toHaveURL(/layout=table/);
+  await page.getByRole("link", { name: "Next", exact: true }).click();
+  await expect(page).toHaveURL(/offset=1/);
+  await expect(page.getByRole("table")).toBeVisible();
+  await page.goBack();
+  await expect(page).not.toHaveURL(/offset=1/);
+  await expect(page.getByRole("table")).toBeVisible();
+  await page.getByLabel("Search titles and available text").fill("knownword");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Search results" })).toBeVisible();
+  await expect(page.getByRole("table").getByRole("link", { name: "Page 2", exact: true })).toBeVisible();
+  await grid.click();
+  await expect(page).not.toHaveURL(/layout=/);
+  await expect(page.getByRole("table")).toHaveCount(0);
+});
+
 test("selected identity fits the configured catalog", async ({ page }) => {
   await page.route("**/api/collections", async route => {
     const response = await route.fetch();
