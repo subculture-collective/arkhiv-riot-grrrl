@@ -260,6 +260,21 @@ export default function App() {
   const requestedVariant = params.get("variant");
   const variant = doc && selectVariant(doc.variants, requestedVariant);
   const docSeries = doc ? seriesOf(doc.collection, doc.id) : undefined;
+  // Link only the series' issues that are publicly readable.
+  const seriesCollection = docSeries && doc ? doc.collection : "";
+  const [publicIssues, setPublicIssues] = useState<Set<string> | null>(null);
+  useEffect(() => {
+    if (!seriesCollection) return;
+    let active = true;
+    allDocuments<DocumentRecord>(new URLSearchParams({ collection: seriesCollection }))
+      .then((docs) => {
+        if (active) setPublicIssues(new Set(docs.map((d) => d.id)));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [seriesCollection]);
   useEffect(() => {
     // The SPA is always served with HTTP 200, so a missing page tells search
     // engines not to index it and does not claim a canonical address.
@@ -452,9 +467,9 @@ export default function App() {
                         </a>{" "}
                         · {issueLabel(docSeries.issue)}
                       </p>
-                      {docSeries.series.issues.length > 1 && (
+                      {publicIssues && docSeries.series.issues.filter((issue) => publicIssues.has(issue.id)).length > 1 && (
                         <ol className="series-issues">
-                          {docSeries.series.issues.map((issue) => (
+                          {docSeries.series.issues.filter((issue) => publicIssues.has(issue.id)).map((issue) => (
                             <li key={issue.id}>
                               {issue.id === doc.id ? (
                                 <span aria-current="page">

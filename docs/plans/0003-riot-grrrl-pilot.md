@@ -85,6 +85,12 @@ or a swipe, and has a full-screen mode (F toggles it, Escape leaves). Full scree
 replaces reading focus. Search and page text share one "Search & text" panel,
 and the record details sit beside the reader on desktop and below it on phones.
 
+Series browsing followed: the catalog has no series field, so series are
+curated by document ID in `web/src/series.json`. The catalog filters by
+series, `/series` lists each series with its issues in order, a document page
+links the other public issues of its series, and the Creator field suggests
+names from the published catalog.
+
 ## Bounded backup follow-up
 
 The opt-in [bounded backup mode](../runbooks/bounded-backups.md) retains complete snapshots and shares verified read-only files between backups. Explicit snapshot/staging/independent-store caps refuse unsafe growth without pruning evidence. Source qualification and live capacity/restore requirements are tracked in Anarchist Archive #56; live jobs retain their existing behavior until reviewed activation.
