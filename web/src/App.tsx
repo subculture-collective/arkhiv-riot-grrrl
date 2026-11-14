@@ -1,5 +1,13 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import Catalog from "./Catalog";
+import SeriesIndex from "./SeriesIndex";
+import {
+  allDocuments,
+  issueLabel,
+  seriesFor,
+  seriesLink,
+  seriesOf,
+} from "./series";
 import {
   FavoriteButton,
   FavoriteShelf,
@@ -97,11 +105,21 @@ const favoriteDocument = async (
     href: `/documents/${encodeURIComponent(id)}?collection=${encodeURIComponent(doc.collection)}`,
   };
 };
+// A series view runs the other catalog filters and keeps the series' issues,
+// in issue order.
+async function seriesListing(query: URLSearchParams, ids: string[]) {
+  const docs = new Map(
+    (await allDocuments<DocumentRecord>(query)).map((doc) => [doc.id, doc]),
+  );
+  const documents = ids.flatMap((id) => docs.get(id) || []);
+  return { documents, total: documents.length, limit: documents.length, offset: 0 };
+}
 export default function App() {
   const params = new URLSearchParams(location.search);
   const id = location.pathname.startsWith("/documents/")
     ? location.pathname.split("/")[2]
     : "";
+  const seriesPage = location.pathname === "/series";
   const [collections, setCollections] = useState<Collection[]>([]);
   const [listing, setListing] = useState<Listing | null>(null);
   const [doc, setDoc] = useState<DocumentRecord | null>(null);
@@ -136,10 +154,16 @@ export default function App() {
         const selected =
           new URLSearchParams(location.search).get("collection") || all[0].id;
         setCollectionID(selected);
+        if (seriesPage) return;
         const q = new URLSearchParams(location.search);
         q.set("collection", selected);
+        const series = seriesFor(selected).find(
+          (s) => s.slug === q.get("series"),
+        );
         const [data, facets] = await Promise.all([
-          json<Listing>(`/api/documents?${q}`, controller.signal),
+          series
+            ? seriesListing(q, series.issues.map((issue) => issue.id))
+            : json<Listing>(`/api/documents?${q}`, controller.signal),
           json<{ subjects: string[] }>(
             `/api/facets?collection=${encodeURIComponent(selected)}`,
             controller.signal,
@@ -169,12 +193,13 @@ export default function App() {
       controller.abort();
       clearTimeout(timeout);
     };
-  }, [id]);
+  }, [id, seriesPage]);
   const collection = collections.find((c) => c.id === collectionID);
   const requestedVariant = params.get("variant");
   const variant = doc && selectVariant(doc.variants, requestedVariant);
+  const docSeries = doc ? seriesOf(doc.collection, doc.id) : undefined;
   useEffect(() => {
-    document.title = `${doc?.metadata.title || collection?.name || "Riot Grrrl zines"} · Riot Grrrl Archive`;
+    document.title = `${doc?.metadata.title || (seriesPage ? "Series" : collection?.name) || "Riot Grrrl zines"} · Riot Grrrl Archive`;
     let canonical = document.querySelector<HTMLLinkElement>(
       'link[rel="canonical"]',
     );
@@ -186,12 +211,14 @@ export default function App() {
     canonical.href = new URL(
       id
         ? `/documents/${id}`
-        : collectionID
+        : seriesPage
+          ? "/series"
+          : collectionID
           ? `/?collection=${encodeURIComponent(collectionID)}`
           : "/",
       publicURL,
     ).href;
-  }, [doc, collection, collectionID, id]);
+  }, [doc, collection, collectionID, id, seriesPage]);
   const offsetLink = (n: number) => {
     const q = new URLSearchParams(location.search);
     q.set("collection", collectionID);
@@ -209,6 +236,16 @@ export default function App() {
           RIOT GRRRL
         </a>
         <span>Zines. Noise. Herstory.</span>
+        <nav aria-label="Archive navigation">
+          <a href="/" aria-current={!id && !seriesPage ? "page" : undefined}>
+            Zines
+          </a>
+          <a
+            href={`/series${collectionID ? `?collection=${encodeURIComponent(collectionID)}` : ""}`}
+            aria-current={seriesPage ? "page" : undefined}>
+            Series
+          </a>
+        </nav>
       </header>
       {loading && (
         <p role="status" className="notice">
@@ -315,6 +352,34 @@ export default function App() {
                       {favorites.notice}
                     </p>
                   )}
+                  {docSeries && (
+                    <section className="series" aria-labelledby="series-title">
+                      <h2 id="series-title">Series</h2>
+                      <p>
+                        <a href={seriesLink(doc.collection, docSeries.series.slug)}>
+                          {docSeries.series.name}
+                        </a>{" "}
+                        · {issueLabel(docSeries.issue)}
+                      </p>
+                      {docSeries.series.issues.length > 1 && (
+                        <ol className="series-issues">
+                          {docSeries.series.issues.map((issue) => (
+                            <li key={issue.id}>
+                              {issue.id === doc.id ? (
+                                <span aria-current="page">
+                                  {issueLabel(issue.issue)}
+                                </span>
+                              ) : (
+                                <a href={`/documents/${issue.id}`}>
+                                  {issueLabel(issue.issue)}
+                                </a>
+                              )}
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                    </section>
+                  )}
                   {doc.metadata.subjects?.length ? (
                     <section className="subjects" aria-labelledby="subjects-title">
                       <h2 id="subjects-title">Subjects</h2>
@@ -408,6 +473,8 @@ export default function App() {
                 </aside>
               </div>
             </article>
+          ) : seriesPage ? (
+            <SeriesIndex collection={collection} collectionID={collectionID} />
           ) : (
             <Catalog
               collection={collection}

@@ -136,3 +136,17 @@ test("selected identity fits the configured catalog", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Document reader" })).not.toHaveAttribute("data-fullscreen", "true");
   await expect(page.getByText("No reuse license is asserted.", { exact: false })).toBeVisible();
 });
+
+test("series page, series filter and creator suggestions", async ({ page }) => {
+  await page.goto("/series?collection=fixture-zines");
+  await expect(page.getByRole("heading", { name: "Series", level: 1 })).toBeVisible();
+  await page.getByRole("link", { name: "Fixture series", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Fixture series" })).toBeVisible();
+  await expect(page.getByText("1 issue in the archive")).toBeVisible();
+  await expect(page.getByLabel("Series")).toHaveValue("fixture-series");
+  await page.getByLabel("Creator").focus();
+  await expect(page.locator('#creator-suggestions option[value="Fixture author"]')).toHaveCount(1);
+  await page.getByRole("link", { name: "Mutual aid fixture", exact: true }).first().click();
+  await expect(page.getByRole("region", { name: "Series" })).toContainText("Fixture series");
+  await expect(page.getByRole("region", { name: "Series" })).toContainText("Issue 1");
+});

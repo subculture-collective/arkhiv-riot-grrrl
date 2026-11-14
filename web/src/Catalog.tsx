@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { catalogDocuments, creatorNames, seriesFor } from "./series";
 import {
   originalDate,
   type Collection,
@@ -7,7 +8,7 @@ import {
 } from "./App";
 import { FavoriteButton, type BrowserFavorites } from "./Preferences";
 
-function Cover({
+export function Cover({
   document: doc,
   eager = false,
 }: {
@@ -58,11 +59,23 @@ export default function Catalog({
   favorites: BrowserFavorites;
 }) {
   const [layout, setLayout] = useState<"grid" | "table">("grid");
+  const [creators, setCreators] = useState<string[] | null>(null);
+  const series = seriesFor(collectionID);
+  const activeSeries = series.find((s) => s.slug === params.get("series"));
+  // Suggestions load the first time the creator field is used.
+  const suggestCreators = () => {
+    if (creators) return;
+    setCreators([]);
+    catalogDocuments<DocumentRecord>(collectionID)
+      .then((docs) => setCreators(creatorNames(docs.map((d) => d.metadata.creator))))
+      .catch(() => setCreators(null));
+  };
   const riot = true;
   const unfiltered =
     !params.get("q") &&
     !params.get("subject") &&
     !params.get("creator") &&
+    !params.get("series") &&
     !params.get("date_from") &&
     !params.get("date_to") &&
     !listing?.offset;
@@ -149,14 +162,29 @@ export default function Catalog({
       )}
       <div className="catalog-heading">
         <h2>
-          {params.get("q") || params.get("subject")
-            ? "Search results"
-            : "The collection"}
+          {activeSeries
+            ? activeSeries.name
+            : params.get("q") || params.get("subject")
+              ? "Search results"
+              : "The collection"}
         </h2>
         <p role="status">
-          {listing?.total || 0} {listing?.total === 1 ? "document" : "documents"}
+          {activeSeries
+            ? `${listing?.total || 0} ${listing?.total === 1 ? "issue" : "issues"} in the archive`
+            : `${listing?.total || 0} ${listing?.total === 1 ? "document" : "documents"}`}
           {params.get("q") ? ` matching “${params.get("q")}”` : ""}
         </p>
+        {activeSeries && (
+          <p className="series-links">
+            <a href={`/series?collection=${encodeURIComponent(collectionID)}`}>
+              All series
+            </a>{" "}
+            ·{" "}
+            <a href={`/?collection=${encodeURIComponent(collectionID)}`}>
+              Every document
+            </a>
+          </p>
+        )}
       </div>
       <form method="get" action="/" className="search">
         <input type="hidden" name="collection" value={collectionID} />
@@ -178,6 +206,19 @@ export default function Catalog({
             ))}
           </select>
         </label>
+        {series.length > 0 && (
+          <label>
+            Series
+            <select name="series" defaultValue={activeSeries?.slug || ""}>
+              <option value="">All series</option>
+              {series.map((s) => (
+                <option key={s.slug} value={s.slug}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <button type="submit">Search</button>
         <label>
           Creator
@@ -185,7 +226,13 @@ export default function Catalog({
             name="creator"
             defaultValue={params.get("creator") || ""}
             maxLength={200}
+            list="creator-suggestions"
+            autoComplete="off"
+            onFocus={suggestCreators}
           />
+          <datalist id="creator-suggestions">
+            {creators?.map((name) => <option key={name} value={name} />)}
+          </datalist>
         </label>
         <label>
           Original date from

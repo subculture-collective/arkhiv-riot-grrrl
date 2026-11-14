@@ -14,7 +14,8 @@ This repository is a separate copy of SUBCULT's Arkhiv archive software with its
 
 For readers:
 
-- A catalog of covers with search across metadata and page text, subject filters and a choice of layouts.
+- A catalog of covers with search across metadata and page text, subject and series filters, creator suggestions as you type, and a choice of layouts.
+- A series page listing each zine title with its issues in order. Series are curated by document in [`web/src/series.json`](web/src/series.json), because the catalog has no series field.
 - Document pages with editions, pages, source details and rights notes.
 - An on-site PDF reader (PDF.js) that opens on each document page with the whole page in view, arrows beside the page (also ←/→ keys and swipe), a full-screen mode, and search inside documents that have extracted text.
 - Downloads of the original preserved files.
