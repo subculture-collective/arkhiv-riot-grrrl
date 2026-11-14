@@ -84,10 +84,10 @@ export function FavoriteButton({
     <button
       className="key favorite-button"
       aria-pressed={saved}
-      aria-label={`${saved ? "Remove" : "Save"} favorite ${title}`}
+      aria-label={`Favorite ${title}`}
       onClick={() => favorites.toggle(id)}
     >
-      {saved ? "Saved favorite" : "Save favorite"}
+      Favorite
     </button>
   );
 }
@@ -95,10 +95,12 @@ export type FavoriteRecord = { title: string; href: string };
 export function FavoriteShelf({
   favorites,
   scope,
+  label = scope,
   resolve,
 }: {
   favorites: BrowserFavorites;
   scope: string;
+  label?: string;
   resolve: (
     id: string,
     signal: AbortSignal,
@@ -159,7 +161,9 @@ export function FavoriteShelf({
     <section className="viewer-preferences" aria-label="Browser favorites">
       <h2>Saved favorites</h2>
       <p>
-        {favorites.ids.length} references saved in this browser for {scope}.
+        {favorites.ids.length}{" "}
+        {favorites.ids.length === 1 ? "reference" : "references"} saved in this
+        browser for {label}.
       </p>
       {favorites.notice && <p role="status">{favorites.notice}</p>}
       <button className="key" onClick={exportFavorites}>

@@ -254,3 +254,36 @@ test("missing pages, stale links and a reader that cannot load", async ({ page }
   await expect(page.getByRole("heading", { level: 1, name: "Mutual aid fixture" })).toBeVisible();
   await expect(page.getByRole("link", { name: /^Download PDF/ })).toBeVisible();
 });
+test("favorite toggle keeps its name and reports what was saved", async ({ page }) => {
+  await page.goto("/?collection=fixture-zines");
+  await page.getByRole("link", { name: "Mutual aid fixture" }).first().click();
+  const favorite = page.getByRole("button", {
+    name: "Favorite Mutual aid fixture",
+    exact: true,
+  });
+  await expect(favorite).toHaveAttribute("aria-pressed", "false");
+  await favorite.click();
+  await expect(favorite).toHaveAttribute("aria-pressed", "true");
+  await expect(favorite).toHaveText("Favorite");
+  await page.getByRole("link", { name: "All zines" }).click();
+  await expect(
+    page.getByText(
+      "1 reference saved in this browser for Synthetic verification collection.",
+    ),
+  ).toBeVisible();
+});
+test("document page warns when browser storage refuses a favorite", async ({ page }) => {
+  await page.addInitScript(() => {
+    Storage.prototype.setItem = () => {
+      throw new DOMException("Storage full", "QuotaExceededError");
+    };
+  });
+  await page.goto("/?collection=fixture-zines");
+  await page.getByRole("link", { name: "Mutual aid fixture" }).first().click();
+  await page
+    .getByRole("button", { name: "Favorite Mutual aid fixture", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Browser storage is unavailable" }),
+  ).toBeVisible();
+});
