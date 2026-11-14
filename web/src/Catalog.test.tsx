@@ -77,3 +77,65 @@ describe("catalog layout", () => {
     );
   });
 });
+
+const collection = { id: "zines", name: "Zines", introduction: "", accent: "#000" };
+const renderNotices = (
+  search: string,
+  listing: Listing | null,
+  listingError = "",
+) =>
+  renderToString(
+    <Catalog
+      collection={collection}
+      collectionID="zines"
+      listing={listing}
+      listingError={listingError}
+      subjects={[]}
+      params={new URLSearchParams(search)}
+      offsetLink={(n) => `/?collection=zines&offset=${n}`}
+      favorites={{ ids: [], toggle: () => {}, notice: "" }}
+    />,
+  );
+const emptyPage = (total: number, offset = 0): Listing => ({
+  documents: [],
+  total,
+  limit: 20,
+  offset,
+});
+
+describe("catalog notices", () => {
+  it("keeps the form and shows the API reason for invalid filters", () => {
+    const html = renderNotices(
+      "collection=zines&date_from=2000-01-01&date_to=1990-01-01",
+      null,
+      "the original-date range is reversed",
+    );
+    expect(html).toContain("<form");
+    expect(html).toContain("<h1");
+    expect(html).toContain("The original-date range is reversed");
+    expect(html).toContain('href="/?collection=zines"');
+    expect(html).not.toContain("0 documents");
+  });
+  it("says a page past the end is past the end and links to the first page", () => {
+    const html = renderNotices("collection=zines&offset=500", emptyPage(23, 500));
+    expect(html).toContain("This page is past the end of the results.");
+    expect(html).toContain('href="/?collection=zines&amp;offset=0"');
+    expect(html).not.toContain("No documents match");
+    // Previous goes to the last real page, not to another empty one.
+    expect(html).toContain('href="/?collection=zines&amp;offset=20">Previous');
+  });
+  it("only blames filters when filters are set", () => {
+    expect(renderNotices("collection=zines&q=nothing", emptyPage(0))).toContain(
+      "No documents match these filters.",
+    );
+    const bare = renderNotices("collection=zines", emptyPage(0));
+    expect(bare).not.toContain("No documents match");
+    expect(bare).toContain("This collection has no documents yet.");
+  });
+  it("treats a whitespace-only search as no search", () => {
+    const html = renderNotices("collection=zines&q=+++", emptyPage(0));
+    expect(html).toContain("The collection");
+    expect(html).not.toContain("Search results");
+    expect(html).not.toContain("matching");
+  });
+});

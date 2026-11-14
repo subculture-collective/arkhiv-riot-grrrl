@@ -310,3 +310,42 @@ test("catalog grid and table favorites show the saved state", async ({ page }) =
   await row.click();
   await expect(row).toHaveAttribute("aria-pressed", "false");
 });
+
+test("invalid filters, stale pages and unknown collections explain themselves", async ({ page }) => {
+  const search = page.getByLabel("Search titles and available text");
+  const count = page.locator(".catalog-heading [role=status]");
+  await page.goto("/?collection=fixture-zines");
+  const total = await count.textContent();
+  await page.getByLabel("Original date from").fill("2000-01-01");
+  await page.getByLabel("Original date to").fill("1990-01-01");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("The original-date range is reversed.");
+  await expect(search).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByText("could not load")).toHaveCount(0);
+  await page.getByRole("link", { name: "Clear filters" }).click();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.getByLabel("Original date from")).toHaveValue("");
+
+  await page.goto("/?collection=fixture-zines&offset=abc");
+  await expect(page.getByRole("alert")).toContainText("page offset must be a whole number");
+  await expect(search).toBeVisible();
+
+  await page.goto("/?collection=fixture-zines&offset=500");
+  await expect(page.getByText("This page is past the end of the results.")).toBeVisible();
+  await expect(page.getByText("No documents match")).toHaveCount(0);
+  await page.getByRole("link", { name: "Go to the first page" }).click();
+  await expect(page.getByRole("heading", { name: "Mutual aid fixture" }).first()).toBeVisible();
+
+  await page.goto("/?collection=fixture-zines&q=+++");
+  await expect(page.getByRole("heading", { name: "The collection" })).toBeVisible();
+  await expect(count).toHaveText(total!);
+
+  await page.goto("/?collection=fixture-zinez");
+  await expect(page.getByRole("heading", { name: "Collection not found" })).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText("There is no collection called “fixture-zinez”.");
+  await expect(page.getByText("No documents match")).toHaveCount(0);
+  await page.getByRole("link", { name: /^Browse / }).click();
+  await expect(page.getByRole("heading", { name: "Collection not found" })).toHaveCount(0);
+  await expect(search).toBeVisible();
+});

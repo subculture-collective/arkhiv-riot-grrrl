@@ -189,6 +189,12 @@ func TestArchiveIntegration(t *testing.T) {
 			t.Fatal("invalid query accepted")
 		}
 	}
+	for _, path := range []string{"/api/documents?offset=abc", "/api/documents?offset=-1", "/api/documents?offset=100001"} {
+		w = request("GET", path, "")
+		if w.Code != 400 || !strings.Contains(w.Body.String(), "the page offset must be a whole number") {
+			t.Fatal("offset error is not explained", path, w.Code, w.Body.String())
+		}
+	}
 	w = request("GET", "/api/assets/"+asset.ID, "bytes=0-4")
 	if w.Code != 206 || w.Body.String() != "%PDF-" || !strings.HasPrefix(w.Header().Get("Content-Range"), "bytes 0-4/") {
 		t.Fatal("range contract", w.Code, w.Body.String())
@@ -219,6 +225,16 @@ func TestArchiveIntegration(t *testing.T) {
 	h, n, _ := storage.Digest(strings.NewReader(w.Body.String()))
 	if h != asset.SHA || n != asset.Size {
 		t.Fatal("download differs from original")
+	}
+	w = request("GET", "/api/documents?collection=fixture-zines", "")
+	var unfiltered struct{ Total int }
+	if json.Unmarshal(w.Body.Bytes(), &unfiltered) != nil || unfiltered.Total == 0 {
+		t.Fatal("unfiltered catalog", w.Body.String())
+	}
+	w = request("GET", "/api/documents?collection=fixture-zines&q="+urlpkg.QueryEscape("   "), "")
+	var spaces struct{ Total int }
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &spaces) != nil || spaces.Total != unfiltered.Total {
+		t.Fatal("whitespace-only search is not treated as empty", w.Body.String())
 	}
 	for _, query := range []string{"collection=fixture-zines&q=absentunique", "collection=missing", "collection=fixture-zines&offset=1"} {
 		w = request("GET", "/api/documents?"+query, "")

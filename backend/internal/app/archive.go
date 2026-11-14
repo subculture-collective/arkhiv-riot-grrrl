@@ -47,12 +47,12 @@ func ArchiveHandler(db *catalog.DB, store *storage.Store) http.Handler {
 		}
 		if q.Get("offset") != "" {
 			offset, e = strconv.Atoi(q.Get("offset"))
-			if e != nil {
-				fail(w, 400, "invalid offset")
+			if e != nil || offset < 0 || offset > 100000 {
+				fail(w, 400, "the page offset must be a whole number from 0 to 100000")
 				return
 			}
 		}
-		if limit < 1 || limit > 50 || offset < 0 || offset > 100000 || !textWithinBounds(q) {
+		if limit < 1 || limit > 50 || !textWithinBounds(q) {
 			fail(w, 400, "query exceeds bounds")
 			return
 		}
@@ -61,7 +61,7 @@ func ArchiveHandler(db *catalog.DB, store *storage.Store) http.Handler {
 			fail(w, 400, err.Error())
 			return
 		}
-		docs, total, e := db.List(r.Context(), q.Get("collection"), q.Get("q"), q.Get("subject"), q.Get("language"), limit, offset, true, filters)
+		docs, total, e := db.List(r.Context(), q.Get("collection"), strings.TrimSpace(q.Get("q")), q.Get("subject"), q.Get("language"), limit, offset, true, filters)
 		if e != nil {
 			fail(w, 503, "catalog unavailable")
 			return
