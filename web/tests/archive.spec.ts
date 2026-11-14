@@ -150,3 +150,26 @@ test("series page, series filter and creator suggestions", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Series" })).toContainText("Fixture series");
   await expect(page.getByRole("region", { name: "Series" })).toContainText("Issue 1");
 });
+
+test("hashed assets, including the pdf.js worker, are cached for a year", async ({ request }) => {
+  const html = await (await request.get("/")).text();
+  const entryMatch = html.match(/\/assets\/index-[\w-]+\.js/);
+  expect(entryMatch, "entry chunk in index.html").toBeTruthy();
+  const entry = entryMatch![0];
+  const readerMatch = (await (await request.get(entry)).text()).match(/Reader-[\w-]+\.js/);
+  expect(readerMatch, "Reader chunk in entry chunk").toBeTruthy();
+  const reader = readerMatch![0];
+  const workerMatch = (await (await request.get("/assets/" + reader)).text()).match(/\/assets\/pdf\.worker[\w.-]*\.mjs/);
+  expect(workerMatch, "worker URL in Reader chunk").toBeTruthy();
+  const worker = workerMatch![0];
+  for (const path of [entry, "/assets/" + reader, worker]) {
+    const response = await request.get(path);
+    expect(response.status(), path).toBe(200);
+    expect(response.headers()["content-type"], path).toContain("application/javascript");
+    expect(response.headers()["cache-control"], path).toBe("public, max-age=31536000, immutable");
+    expect(response.headers()["content-security-policy"], path).toContain("default-src 'self'");
+  }
+  for (const path of ["/assets/missing-0000.js", "/assets/missing-0000.mjs"]) {
+    expect((await request.get(path)).status(), path).toBe(404);
+  }
+});
