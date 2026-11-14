@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import data from "./series.json";
-import { creatorNames, issueLabel, seriesOf } from "./series";
+import { creatorNames, issueCount, issueLabel, seriesOf } from "./series";
 
 describe("curated series", () => {
   it("gives each series a unique slug and each document one series", () => {
@@ -21,9 +21,13 @@ describe("curated series", () => {
     expect(found?.issue).toBe("Volume 3");
     expect(seriesOf("riot-grrrl", "missing")).toBeUndefined();
   });
+  it("counts the formats of one issue once", () => {
+    expect(issueCount(["42", "42 (print)", "43–44", "43–44 (print, A4)"])).toBe(2);
+  });
   it("labels plain issue numbers", () => {
     expect(issueLabel("3")).toBe("Issue 3");
     expect(issueLabel("Volume 2")).toBe("Volume 2");
+    expect(issueLabel("42 (print)")).toBe("Issue 42 (print)");
   });
 });
 

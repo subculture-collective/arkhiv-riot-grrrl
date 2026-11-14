@@ -142,7 +142,7 @@ test("series page, series filter and creator suggestions", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Series", level: 1 })).toBeVisible();
   await page.getByRole("link", { name: "Fixture series", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Fixture series" })).toBeVisible();
-  await expect(page.getByText("1 issue in the archive")).toBeVisible();
+  await expect(page.getByText("1 document in this series")).toBeVisible();
   await expect(page.getByLabel("Series")).toHaveValue("fixture-series");
   await page.getByLabel("Creator").focus();
   await expect(page.locator('#creator-suggestions option[value="Fixture author"]')).toHaveCount(1);

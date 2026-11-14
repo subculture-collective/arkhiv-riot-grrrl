@@ -28,6 +28,10 @@ export function seriesOf(collection: string, id: string) {
 export const issueLabel = (issue: string) =>
   /^\d/.test(issue) ? `Issue ${issue}` : issue;
 
+// Formats of one issue ("42", "42 (print)") count once.
+export const issueCount = (labels: string[]) =>
+  new Set(labels.map((label) => label.replace(/\s*\(.*\)$/, ""))).size;
+
 export const seriesLink = (collection: string, slug: string) =>
   `/?${new URLSearchParams({ collection, series: slug })}`;
 
