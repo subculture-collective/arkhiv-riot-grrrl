@@ -170,7 +170,7 @@ export default function Catalog({
         </h2>
         <p role="status">
           {activeSeries
-            ? `${listing?.total || 0} ${listing?.total === 1 ? "issue" : "issues"} in the archive`
+            ? `${listing?.total || 0} ${listing?.total === 1 ? "document" : "documents"} in this series`
             : `${listing?.total || 0} ${listing?.total === 1 ? "document" : "documents"}`}
           {params.get("q") ? ` matching “${params.get("q")}”` : ""}
         </p>

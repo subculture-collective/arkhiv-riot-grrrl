@@ -4,6 +4,7 @@ import { Cover } from "./Catalog";
 import {
   catalogDocuments,
   creatorNames,
+  issueCount,
   issueLabel,
   seriesFor,
   seriesLink,
@@ -80,6 +81,7 @@ export default function SeriesIndex({
         {list.map(({ series, issues }) => {
           const first = issues[0].doc;
           const span = years(issues.map((issue) => issue.doc));
+          const count = issueCount(issues.map((issue) => issue.issue));
           const creators = creatorNames(
             issues.map((issue) => issue.doc.metadata.creator),
           );
@@ -93,7 +95,8 @@ export default function SeriesIndex({
                   </a>
                 </h2>
                 <p className="series-count">
-                  {issues.length} {issues.length === 1 ? "issue" : "issues"}
+                  {count} {count === 1 ? "issue" : "issues"}
+                  {issues.length > count ? ` · ${issues.length} files` : ""}
                   {span ? ` · ${span}` : ""}
                 </p>
                 {creators.length > 0 && <p>{creators.join(", ")}</p>}
