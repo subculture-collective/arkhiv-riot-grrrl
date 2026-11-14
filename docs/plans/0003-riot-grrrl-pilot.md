@@ -79,6 +79,12 @@ partial and unknown dates remain visible when bounds are absent. Editorial date
 corrections do not replace the original source date. Existing covers, PDF text,
 search, downloads, rights and product-owned layout remain available.
 
+In November 2026 the document page put the reader first: it opens with the page,
+starts at "Whole page", turns pages with arrows beside the page, the arrow keys
+or a swipe, and has a full-screen mode (F toggles it, Escape leaves). Full screen
+replaces reading focus. Search and page text share one "Search & text" panel,
+and the record details sit beside the reader on desktop and below it on phones.
+
 ## Bounded backup follow-up
 
 The opt-in [bounded backup mode](../runbooks/bounded-backups.md) retains complete snapshots and shares verified read-only files between backups. Explicit snapshot/staging/independent-store caps refuse unsafe growth without pruning evidence. Source qualification and live capacity/restore requirements are tracked in Anarchist Archive #56; live jobs retain their existing behavior until reviewed activation.

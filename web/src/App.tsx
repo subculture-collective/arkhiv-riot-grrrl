@@ -310,6 +310,11 @@ export default function App() {
                       title={doc.metadata.title}
                     />
                   </div>
+                  {favorites.notice && (
+                    <p role="status" className="favorite-notice">
+                      {favorites.notice}
+                    </p>
+                  )}
                   {doc.metadata.subjects?.length ? (
                     <section className="subjects" aria-labelledby="subjects-title">
                       <h2 id="subjects-title">Subjects</h2>

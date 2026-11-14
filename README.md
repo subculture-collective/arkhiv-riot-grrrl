@@ -16,7 +16,7 @@ For readers:
 
 - A catalog of covers with search across metadata and page text, subject filters and a choice of layouts.
 - Document pages with editions, pages, source details and rights notes.
-- An on-site PDF reader (PDF.js) with a reading focus mode, and search inside documents that have extracted text.
+- An on-site PDF reader (PDF.js) that opens on each document page with the whole page in view, arrows beside the page (also ←/→ keys and swipe), a full-screen mode, and search inside documents that have extracted text.
 - Downloads of the original preserved files.
 - Favorites saved in your browser, and share links.
 

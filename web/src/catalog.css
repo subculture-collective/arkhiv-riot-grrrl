@@ -1384,3 +1384,7 @@ main:has(.document) .masthead {
     gap: 6px 10px;
   }
 }
+.favorite-notice {
+  margin: -10px 0 0;
+  font-size: 13px;
+}
