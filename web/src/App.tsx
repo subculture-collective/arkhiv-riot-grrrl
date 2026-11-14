@@ -69,13 +69,24 @@ async function json<T>(url: string, signal: AbortSignal): Promise<T> {
 }
 // Catalog languages are ISO 639-2 codes ("eng"); show their English names.
 const languageCodes: Record<string, string> = { eng: "en", fre: "fr", fra: "fr", ger: "de", deu: "de", spa: "es", ita: "it", por: "pt", dut: "nl", nld: "nl", jpn: "ja" };
+const displayNames = new Intl.DisplayNames(["en"], { type: "language" });
+function knownLanguage(code: string) {
+  try {
+    const name = displayNames.of(languageCodes[code.toLowerCase()] || code);
+    return name && name.toLowerCase() !== code.toLowerCase() ? name : undefined;
+  } catch {
+    return undefined;
+  }
+}
+// Some source records carry free text such as "english-handwritten" instead
+// of a code. The stored value is kept; it is shown as "English (handwritten)".
 export function languageName(code: string | undefined) {
   if (!code) return "Unknown";
-  try {
-    return new Intl.DisplayNames(["en"], { type: "language" }).of(languageCodes[code] || code) || code;
-  } catch {
-    return code;
-  }
+  const known = knownLanguage(code);
+  if (known) return known;
+  const [base, ...notes] = code.split(/[-_\s]+/).filter(Boolean);
+  const name = knownLanguage(base) || base.charAt(0).toUpperCase() + base.slice(1);
+  return notes.length ? `${name} (${notes.join(" ")})` : name;
 }
 export const megabytes = (bytes: number) => `${(bytes / 1048576).toFixed(1)} MB`;
 export const textStatus = (v: Variant) =>
@@ -84,9 +95,14 @@ export const textStatus = (v: Variant) =>
     : v.text_status === "document-text"
       ? "Document text searchable; page mapping unavailable."
       : "Text search unavailable.";
-export const originalDate = (doc: DocumentRecord) =>
-  (doc.original_date === undefined ? doc.metadata.date : doc.original_date) ||
-  "Date unknown";
+// Source records sometimes spell a missing date out ("unknown").
+const missingDates = new Set(["unknown", "undated", "n.d.", "nd"]);
+export const originalDate = (doc: DocumentRecord) => {
+  const date = (
+    doc.original_date === undefined ? doc.metadata.date : doc.original_date
+  )?.trim();
+  return date && !missingDates.has(date.toLowerCase()) ? date : "Date unknown";
+};
 export const selectVariant = (variants: Variant[], requested: string | null) =>
   requested ? variants.find((v) => v.id === requested) : variants[0];
 const favoriteDocument = async (
