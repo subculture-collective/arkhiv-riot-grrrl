@@ -126,7 +126,7 @@ test("selected identity fits the configured catalog", async ({ page }) => {
   await expect(page.getByLabel("Page number")).toHaveValue("1");
   await expect(page.getByTestId("pdf-canvas")).toBeVisible();
   await expect(page.getByRole("button", { name: "Next page", exact: true })).toBeEnabled();
-  await expect(page.getByRole("button", { name: "Previous page", exact: true })).toBeHidden();
+  await expect(page.getByRole("button", { name: "Previous page", exact: true })).toBeDisabled();
   await expect(page.getByLabel("Zoom")).toHaveValue("page");
   const canvas = await page.getByTestId("pdf-canvas").boundingBox();
   expect(canvas && canvas.y + canvas.height <= (page.viewportSize()?.height ?? 0) + 1).toBeTruthy();
