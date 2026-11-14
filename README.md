@@ -103,6 +103,8 @@ The repository builds two images:
 - [`backend/Dockerfile`](backend/Dockerfile): the API and the `arkhiv` CLI, with migrations, collection files, `poppler-utils` and the PostgreSQL client. The API listens on port 8080 and stores files under `/data/archive`.
 - [`web/Dockerfile`](web/Dockerfile): the static frontend on nginx. [`web/nginx.public.conf`](web/nginx.public.conf) is the configuration for a public site.
 
+Since November 14, 2026 riot-grrrl.subcult.tv's `/api` is the shared Arkhiv core in print compatibility mode, with its own database (`deploy/core-compose.yml`); the API in `backend/` serves local development and the stopped rollback container. See [`docs/runbooks/shared-core-release.md`](docs/runbooks/shared-core-release.md).
+
 For a public deployment, run migrations and acquisition with an operator database role, then start the API with `ARKHIV_PUBLIC=1`, a read-only database role and a read-only archive mount. Approve files with `approve-public` before they appear. After changing `collections/riot-grrrl-public-review.json`, run `python3 scripts/sitemap.py` to update `web/public/sitemap.xml`; `make verify` fails while the sitemap is out of date. Serve the frontend over HTTPS.
 
 ## Project layout
