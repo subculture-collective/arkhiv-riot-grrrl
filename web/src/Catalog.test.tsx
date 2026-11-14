@@ -29,11 +29,11 @@ const listing: Listing = {
   offset: 0,
 };
 
-const render = (search: string) =>
+const render = (search: string, shown: Listing = listing) =>
   renderToString(
     <Catalog
       collectionID="fixture-zines"
-      listing={listing}
+      listing={shown}
       subjects={[]}
       params={new URLSearchParams(search)}
       offsetLink={(n) => `/?offset=${n}`}
@@ -65,5 +65,15 @@ describe("catalog layout", () => {
     );
     expect(table).toContain("Page 2");
     expect(table).toContain("a knownword here");
+  });
+
+  it("keeps the table when clearing filters", () => {
+    const empty = { ...listing, documents: [], total: 0 };
+    expect(render("collection=fixture-zines&q=none&layout=table", empty)).toContain(
+      'href="/?collection=fixture-zines&amp;layout=table">Clear filters',
+    );
+    expect(render("collection=fixture-zines&q=none", empty)).toContain(
+      'href="/?collection=fixture-zines">Clear filters',
+    );
   });
 });

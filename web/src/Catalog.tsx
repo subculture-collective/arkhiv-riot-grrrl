@@ -89,6 +89,11 @@ export default function Catalog({
     );
     setLayout(next);
   };
+  // Unfiltered catalog link that keeps the chosen layout.
+  const everyDocument = `/?${new URLSearchParams({
+    collection: collectionID,
+    ...(layout === "table" ? { layout } : {}),
+  })}`;
   const [creators, setCreators] = useState<string[] | null>(null);
   const series = seriesFor(collectionID);
   const activeSeries = series.find((s) => s.slug === params.get("series"));
@@ -210,9 +215,7 @@ export default function Catalog({
               All series
             </a>{" "}
             ·{" "}
-            <a href={`/?collection=${encodeURIComponent(collectionID)}`}>
-              Every document
-            </a>
+            <a href={everyDocument}>Every document</a>
           </p>
         )}
       </div>
@@ -312,11 +315,7 @@ export default function Catalog({
       {listing?.documents.length === 0 && (
         <p className="notice">
           No documents match these filters.{" "}
-          <a
-            href={`/?collection=${encodeURIComponent(collectionID)}${layout === "table" ? "&layout=table" : ""}`}
-          >
-            Clear filters
-          </a>
+          <a href={everyDocument}>Clear filters</a>
         </p>
       )}
       {layout === "table" ? (

@@ -56,7 +56,7 @@ const loaded = new Map<string, Promise<unknown[]>>();
 // listing API returns at most 50 documents per request.
 export function allDocuments<T>(query: URLSearchParams): Promise<T[]> {
   const filters = new URLSearchParams(query);
-  for (const key of ["series", "offset", "limit"]) filters.delete(key);
+  for (const key of ["series", "offset", "limit", "layout"]) filters.delete(key);
   filters.sort();
   const key = String(filters);
   let all = loaded.get(key);
