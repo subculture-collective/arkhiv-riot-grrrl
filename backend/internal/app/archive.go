@@ -150,7 +150,7 @@ func ArchiveHandler(db *catalog.DB, store *storage.Store) http.Handler {
 			fail(w, 404, "asset unavailable")
 			return
 		}
-		rows, e := db.Pool.Query(r.Context(), `SELECT t.page,left(t.text,350) FROM variants v JOIN documents d ON d.id=v.document_id JOIN page_text t ON t.asset_sha=v.asset_sha WHERE v.id=$1 AND d.published AND (NOT $3 OR v.public_approved) AND t.search @@ plainto_tsquery('simple',$2) ORDER BY t.page LIMIT 50`, r.PathValue("id"), q, db.PublicOnly)
+		rows, e := db.Pool.Query(r.Context(), `SELECT t.page,`+catalog.HitSnippet+` FROM variants v JOIN documents d ON d.id=v.document_id JOIN page_text t ON t.asset_sha=v.asset_sha WHERE v.id=$1 AND d.published AND (NOT $3 OR v.public_approved) AND t.search @@ plainto_tsquery('simple',$2) ORDER BY t.page LIMIT 50`, r.PathValue("id"), q, db.PublicOnly)
 		if e != nil {
 			fail(w, 503, "search unavailable")
 			return
