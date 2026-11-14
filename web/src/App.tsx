@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import Catalog from "./Catalog";
 import SeriesIndex from "./SeriesIndex";
 import {
@@ -57,15 +57,34 @@ export interface Listing {
   limit: number;
   offset: number;
 }
+// A 404 is permanent: retrying the same link cannot help, so the page offers the catalog instead.
+class NotFoundError extends Error {}
 async function json<T>(url: string, signal: AbortSignal): Promise<T> {
   const r = await fetch(url, { signal });
-  if (!r.ok)
-    throw new Error(
-      r.status === 404
-        ? "This document is unavailable."
-        : "The archive could not load. Please try again.",
+  if (r.status === 404)
+    throw new NotFoundError(
+      "This zine is not in the archive. The link may be mistyped, or the zine may no longer be public.",
     );
+  if (!r.ok) throw new Error("The archive could not load. Please try again.");
   return r.json();
+}
+// If the reader's code cannot load (a failed request, or a tab left open across a
+// deploy), the rest of the document page stays and the reader area says so.
+class ReaderBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? (
+      <div role="alert" className="notice">
+        <p>The reader could not load.</p>
+        <a href={location.href}>Reload the page</a>
+      </div>
+    ) : (
+      this.props.children
+    );
+  }
 }
 // Catalog languages are usually ISO 639-2 codes ("eng"); show their English
 // names. Codes Intl does not know fall through to languageName's free-text path.
@@ -109,6 +128,14 @@ export const originalDate = (doc: DocumentRecord) => {
 };
 export const selectVariant = (variants: Variant[], requested: string | null) =>
   requested ? variants.find((v) => v.id === requested) : variants[0];
+// The address without one query parameter. It serialises the query rather
+// than reading URLSearchParams.size, which older supported browsers lack.
+export const addressWithout = (pathname: string, search: string, key: string) => {
+  const q = new URLSearchParams(search);
+  q.delete(key);
+  const rest = q.toString();
+  return rest ? `${pathname}?${rest}` : pathname;
+};
 const favoriteDocument = async (
   id: string,
   signal: AbortSignal,
@@ -140,11 +167,15 @@ export default function App() {
     ? location.pathname.split("/")[2]
     : "";
   const seriesPage = location.pathname === "/series";
+  // Only the catalog, series and document pages exist; any other path is not found.
+  const unknownPath = !id && !seriesPage && location.pathname !== "/";
   const [collections, setCollections] = useState<Collection[]>([]);
   const [listing, setListing] = useState<Listing | null>(null);
   const [doc, setDoc] = useState<DocumentRecord | null>(null);
   const [subjects, setSubjects] = useState<string[]>([]);
   const [error, setError] = useState("");
+  const [notFound, setNotFound] = useState(false);
+  const [staleEdition, setStaleEdition] = useState(false);
   const [loading, setLoading] = useState(true);
   const [collectionID, setCollectionID] = useState(
     params.get("collection") || "",
@@ -155,6 +186,7 @@ export default function App() {
     let active = true;
     const timeout = setTimeout(() => controller.abort(), 15000);
     async function load() {
+      if (unknownPath) throw new NotFoundError("This page does not exist.");
       const all = await json<Collection[]>(
         "/api/collections",
         controller.signal,
@@ -167,6 +199,14 @@ export default function App() {
           controller.signal,
         );
         if (active) {
+          // A link to a replaced or withdrawn edition opens the document's
+          // available edition instead, with a notice, and the address and
+          // share links drop the stale edition.
+          const requested = new URLSearchParams(location.search).get("variant");
+          if (requested && d.variants.length && !selectVariant(d.variants, requested)) {
+            history.replaceState(null, "", addressWithout(location.pathname, location.search, "variant"));
+            setStaleEdition(true);
+          }
           setDoc(d);
           setCollectionID(d.collection);
         }
@@ -197,12 +237,14 @@ export default function App() {
     }
     load()
       .catch((e) => {
-        if (active)
+        if (active) {
+          setNotFound(e instanceof NotFoundError);
           setError(
             controller.signal.aborted
               ? "The archive took too long to respond. Please try again."
               : e.message,
           );
+        }
       })
       .finally(() => {
         clearTimeout(timeout);
@@ -213,16 +255,31 @@ export default function App() {
       controller.abort();
       clearTimeout(timeout);
     };
-  }, [id, seriesPage]);
+  }, [id, seriesPage, unknownPath]);
   const collection = collections.find((c) => c.id === collectionID);
   const requestedVariant = params.get("variant");
   const variant = doc && selectVariant(doc.variants, requestedVariant);
   const docSeries = doc ? seriesOf(doc.collection, doc.id) : undefined;
   useEffect(() => {
-    document.title = `${doc?.metadata.title || (seriesPage ? "Series" : collection?.name) || "Riot Grrrl zines"} · Riot Grrrl Archive`;
+    // The SPA is always served with HTTP 200, so a missing page tells search
+    // engines not to index it and does not claim a canonical address.
+    let robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
     let canonical = document.querySelector<HTMLLinkElement>(
       'link[rel="canonical"]',
     );
+    if (notFound) {
+      document.title = "Not found · Riot Grrrl Archive";
+      canonical?.remove();
+      if (!robots) {
+        robots = document.createElement("meta");
+        robots.name = "robots";
+        document.head.append(robots);
+      }
+      robots.content = "noindex";
+      return;
+    }
+    robots?.remove();
+    document.title = `${doc?.metadata.title || (seriesPage ? "Series" : collection?.name) || "Riot Grrrl zines"} · Riot Grrrl Archive`;
     if (!canonical) {
       canonical = document.createElement("link");
       canonical.rel = "canonical";
@@ -238,7 +295,7 @@ export default function App() {
           : "/",
       publicURL,
     ).href;
-  }, [doc, collection, collectionID, id, seriesPage]);
+  }, [doc, collection, collectionID, id, seriesPage, notFound]);
   const offsetLink = (n: number) => {
     const q = new URLSearchParams(location.search);
     q.set("collection", collectionID);
@@ -275,7 +332,13 @@ export default function App() {
       {error && (
         <div role="alert" className="notice">
           <p>{error}</p>
-          <a href={location.href}>Try again</a>
+          {notFound ? (
+            <a href={collectionID ? `/?collection=${encodeURIComponent(collectionID)}` : "/"}>
+              Browse all zines
+            </a>
+          ) : (
+            <a href={location.href}>Try again</a>
+          )}
         </div>
       )}
       {!loading && !error && !collections.length && (
@@ -314,6 +377,12 @@ export default function App() {
                   </a>
                 </p>
               )}
+              {staleEdition && (
+                <p role="status" className="notice">
+                  The edition in this link is no longer available, so the
+                  current edition is shown.
+                </p>
+              )}
               <div className="document-body">
                 <div className="document-main">
                   <nav className="document-crumbs" aria-label="Breadcrumb">
@@ -332,15 +401,17 @@ export default function App() {
                   </header>
                   {variant && (
                     <div className="document-reader">
-                      <Suspense
-                        fallback={<p role="status">Loading reader…</p>}
-                      >
-                        <Reader
-                          variant={variant}
-                          title={doc.metadata.title}
-                          initialPage={Number(params.get("page") || 1)}
-                        />
-                      </Suspense>
+                      <ReaderBoundary>
+                        <Suspense
+                          fallback={<p role="status">Loading reader…</p>}
+                        >
+                          <Reader
+                            variant={variant}
+                            title={doc.metadata.title}
+                            initialPage={Number(params.get("page") || 1)}
+                          />
+                        </Suspense>
+                      </ReaderBoundary>
                     </div>
                   )}
                 </div>

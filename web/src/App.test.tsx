@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("./Reader", () => ({ default: () => null }));
 import App, {
   type DocumentRecord,
+  addressWithout,
   languageName,
   originalDate,
   selectVariant,
@@ -58,5 +59,28 @@ describe("byline values", () => {
     for (const messy of [" ", "-", "_", " - _ "]) expect(languageName(messy)).toBe("Unknown");
     expect(languageName(" eng ")).toBe("English");
     expect(languageName("english and french")).toBe("English and french");
+  });
+});
+describe("stale edition address", () => {
+  const path = "/documents/zine";
+  it("keeps the other parameters when dropping the edition", () => {
+    expect(
+      addressWithout(path, "?read=1&variant=stale&page=2&collection=x", "variant"),
+    ).toBe(`${path}?read=1&page=2&collection=x`);
+    expect(addressWithout(path, "?variant=stale", "variant")).toBe(path);
+  });
+  it("does not rely on URLSearchParams.size", () => {
+    const size = Object.getOwnPropertyDescriptor(URLSearchParams.prototype, "size");
+    Object.defineProperty(URLSearchParams.prototype, "size", {
+      configurable: true,
+      get: () => undefined,
+    });
+    try {
+      expect(addressWithout(path, "?read=1&variant=stale&page=2", "variant")).toBe(
+        `${path}?read=1&page=2`,
+      );
+    } finally {
+      if (size) Object.defineProperty(URLSearchParams.prototype, "size", size);
+    }
   });
 });
