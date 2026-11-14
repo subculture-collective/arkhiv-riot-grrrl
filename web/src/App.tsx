@@ -598,6 +598,7 @@ export default function App() {
         <FavoriteShelf
           favorites={favorites}
           scope={collectionID}
+          label={collection?.name}
           resolve={favoriteDocument}
         />
       )}

@@ -254,3 +254,59 @@ test("missing pages, stale links and a reader that cannot load", async ({ page }
   await expect(page.getByRole("heading", { level: 1, name: "Mutual aid fixture" })).toBeVisible();
   await expect(page.getByRole("link", { name: /^Download PDF/ })).toBeVisible();
 });
+test("favorite toggle keeps its name and reports what was saved", async ({ page }) => {
+  await page.goto("/?collection=fixture-zines");
+  await page.getByRole("link", { name: "Mutual aid fixture" }).first().click();
+  const favorite = page.getByRole("button", {
+    name: "Favorite Mutual aid fixture",
+    exact: true,
+  });
+  await expect(favorite).toHaveAttribute("aria-pressed", "false");
+  await favorite.click();
+  await expect(favorite).toHaveAttribute("aria-pressed", "true");
+  await expect(favorite).toHaveText("Favorite");
+  await page.getByRole("link", { name: "All zines" }).click();
+  await expect(
+    page.getByText(
+      "1 reference saved in this browser for Synthetic verification collection.",
+    ),
+  ).toBeVisible();
+});
+test("document page warns when browser storage refuses a favorite", async ({ page }) => {
+  await page.addInitScript(() => {
+    Storage.prototype.setItem = () => {
+      throw new DOMException("Storage full", "QuotaExceededError");
+    };
+  });
+  await page.goto("/?collection=fixture-zines");
+  await page.getByRole("link", { name: "Mutual aid fixture" }).first().click();
+  const favorite = page.getByRole("button", {
+    name: "Favorite Mutual aid fixture",
+    exact: true,
+  });
+  await favorite.click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Browser storage is unavailable" }),
+  ).toBeVisible();
+  await expect(favorite).toHaveAttribute("aria-pressed", "true");
+});
+test("catalog grid and table favorites show the saved state", async ({ page }) => {
+  await page.goto("/?collection=fixture-zines");
+  const favorite = page
+    .getByRole("button", { name: "Favorite Mutual aid fixture", exact: true })
+    .first();
+  await expect(favorite).toHaveAttribute("aria-pressed", "false");
+  await favorite.click();
+  await expect(favorite).toHaveAttribute("aria-pressed", "true");
+  await expect(favorite).toHaveText("Favorite");
+  await expect(favorite).toHaveCSS("background-color", "rgb(35, 23, 34)");
+  await page.getByRole("button", { name: "Table", exact: true }).click();
+  const row = page.getByRole("table").getByRole("button", {
+    name: "Favorite Mutual aid fixture",
+    exact: true,
+  });
+  await expect(row).toHaveAttribute("aria-pressed", "true");
+  await expect(row).toHaveCSS("background-color", "rgb(35, 23, 34)");
+  await row.click();
+  await expect(row).toHaveAttribute("aria-pressed", "false");
+});

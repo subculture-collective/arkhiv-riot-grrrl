@@ -712,7 +712,17 @@ footer {
 .document-details .document-actions .button:hover {
   background: #e9e76f;
 }
-.document-details .document-actions .favorite-button::before {
+/* The favorite toggle keeps one name; the filled bookmark and dark fill show it is saved. */
+.favorite-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.favorite-button[aria-pressed="true"] {
+  background: #231722;
+  color: #f8e4cf;
+}
+.favorite-button::before {
   content: "";
   flex: none;
   width: 16px;
@@ -735,7 +745,7 @@ footer {
   margin: 4px 0 0;
   font-size: 13px;
 }
-.document-details .document-actions .favorite-button[aria-pressed="true"]::before {
+.favorite-button[aria-pressed="true"]::before {
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='2.5'%3E%3Cpath d='M6 3h12v18l-6-5-6 5z'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 .document-details .document-actions .button::before {
@@ -804,6 +814,7 @@ footer {
 .share-more summary:hover {
   background: #fff;
 }
+/* Repeats .favorite-button's pressed fill so it beats the hover rule above. */
 .document-actions button[aria-pressed="true"] {
   background: #231722;
   color: #f8e4cf;
