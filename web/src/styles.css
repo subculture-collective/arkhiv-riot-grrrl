@@ -255,6 +255,4 @@ summary:focus-visible {
 .share-controls { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:16px 0; }
 .share-controls label { max-width:100%; }
 .share-controls input { width:100%; }
-.reading-focus .masthead,.reading-focus .collection-nav,.reading-focus .about,.reading-focus footer { display:none; }
-.reading-focus .reader { margin:24px auto; }
 .filters { flex-wrap:wrap; }

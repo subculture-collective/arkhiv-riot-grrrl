@@ -589,3 +589,798 @@ footer {
     transform: none;
   }
 }
+
+/* Document page: the zine first, its details beside it. */
+.document {
+  padding-top: 8px;
+}
+@media (min-width: 901px) {
+  .document-body {
+    align-items: stretch;
+  }
+  /* The dashed rule runs the full height of the reader column. */
+  .document-main {
+    padding-right: 24px;
+    border-right: 1px dashed #231722;
+  }
+  .document-body > .document-details {
+    align-self: start;
+    padding-left: 0;
+    border-left: 0;
+  }
+}
+.document a:not(.button) {
+  color: #231722;
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 1px;
+}
+.document a:not(.button):hover {
+  color: var(--accent);
+}
+.document-crumbs {
+  font: 13px/1.5 "Courier New", monospace;
+  margin: 4px 0 2px;
+}
+.document-crumbs .back {
+  display: inline-block;
+  margin-right: 0.4em;
+}
+.document h1 {
+  font: 700 clamp(26px, 3vw, 36px) / 1.05 "Courier New", monospace;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+/* Separators between items; the clip hides the one that would start a wrapped line. */
+.byline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 0;
+  margin: 6px 0 0 -13px;
+  clip-path: inset(0 0 0 13px);
+  font: 14px/1.4 "Courier New", monospace;
+}
+.byline span:first-child {
+  font-weight: 700;
+}
+.byline span {
+  padding: 0 12px;
+  border-left: 1px solid #23172266;
+}
+.document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.document-actions .share-controls {
+  margin: 0;
+  gap: 8px;
+}
+/* Download is the main action beside the reader; saving and sharing follow it at equal width. */
+.document-details .document-actions > * {
+  flex: 0 0 calc(50% - 4px);
+  min-width: 0;
+  box-sizing: border-box;
+}
+.document-details .document-actions .share-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.document-details .document-actions .share-more summary,
+.document-details .document-actions > button {
+  padding-inline: 8px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 38px;
+  box-sizing: border-box;
+}
+.document-details .document-actions .button {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  font-weight: 700;
+  box-shadow: 3px 3px 0 #231722;
+}
+.document-details .document-actions .button:hover {
+  background: #e9e76f;
+}
+.document-details .document-actions .favorite-button::before {
+  content: "";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5'%3E%3Cpath d='M6 3h12v18l-6-5-6 5z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.document-details .document-actions .share-more summary::before {
+  content: "";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5'%3E%3Cpath d='M12 15V3m-5 5 5-5 5 5M5 13v8h14v-8'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.document-details .document-actions {
+  align-items: start;
+}
+.document-details .document-actions .share-controls > :not(.share-more) {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+.document-details .document-actions .favorite-button[aria-pressed="true"]::before {
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='2.5'%3E%3Cpath d='M6 3h12v18l-6-5-6 5z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.document-details .document-actions .button::before {
+  content: "";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5'%3E%3Cpath d='M12 3v12m-5-5 5 5 5-5M4 20h16'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+/* One chevron for every menu and disclosure: open points down, closed points right. */
+.chevron,
+.document-details details:not(.share-more) > summary::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 2px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.15s;
+}
+.document-details details:not(.share-more) > summary {
+  position: relative;
+  padding-left: 16px;
+  list-style: none;
+  cursor: pointer;
+}
+.document-details details:not(.share-more) > summary::-webkit-details-marker {
+  display: none;
+}
+.document-details details:not(.share-more) > summary::before {
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  margin: 0;
+  transform: rotate(-45deg);
+}
+.document-details details:not(.share-more)[open] > summary::before {
+  transform: translateY(-2px) rotate(45deg);
+}
+.share-more[open] .chevron {
+  transform: translateY(1px) rotate(-135deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .chevron,
+  .document-details details:not(.share-more) > summary::before {
+    transition: none;
+  }
+}
+/* Secondary actions in paper and ink, like the reader controls. */
+.document-actions button,
+.document-actions .button,
+.share-more summary {
+  padding: 7px 12px;
+  font-size: 14px;
+  background: #f7ebda;
+  color: #231722;
+  border: 1px solid #231722;
+  box-shadow: none;
+  cursor: pointer;
+}
+.document-actions button:hover,
+.document-actions .button:hover,
+.share-more summary:hover {
+  background: #fff;
+}
+.document-actions button[aria-pressed="true"] {
+  background: #231722;
+  color: #f8e4cf;
+}
+.share-more {
+  position: relative;
+}
+.share-more summary {
+  list-style: none;
+}
+.share-more summary::-webkit-details-marker {
+  display: none;
+}
+.share-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 2;
+  display: grid;
+  min-width: 170px;
+  background: #f7ebda;
+  border: 1px solid #231722;
+  box-shadow: 2px 3px 0 #0002;
+}
+.share-menu > a,
+.document-actions .share-menu > button {
+  padding: 8px 12px;
+  white-space: nowrap;
+  text-align: left;
+  font-size: 14px;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+.document-actions .share-menu > :hover {
+  background: #fff;
+}
+.document .share-menu > a {
+  color: #231722;
+  text-decoration: none;
+}
+.document-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 272px;
+  gap: 24px;
+  align-items: start;
+}
+.document-main {
+  min-width: 0;
+}
+.document-main > .document-header {
+  margin-bottom: 14px;
+}
+.download-size {
+  font-weight: 400;
+  font-size: 13px;
+}
+.document-details {
+  display: grid;
+  gap: 18px;
+  font-size: 14px;
+  line-height: 1.5;
+  position: sticky;
+  top: 16px;
+  padding-left: 20px;
+  border-left: 1px dashed #231722;
+}
+.document-details .rights > summary {
+  margin-bottom: 6px;
+}
+main:has(.document) > footer {
+  border-top: 2px dashed #231722;
+}
+main:has(.document) > footer a {
+  color: #231722;
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+}
+/* Section labels: small capitals over a dashed rule. */
+.document-details h2 {
+  font: 700 12px/1.2 "Courier New", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed #231722;
+}
+.subject-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+.document .subject-list {
+  gap: 4px 14px;
+}
+.document .subject-list a {
+  font: 14px/1.5 "Courier New", monospace;
+  color: #231722;
+}
+.document .subject-list a::before {
+  content: "#";
+  color: var(--accent);
+}
+.editions ul {
+  list-style: none;
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+}
+.editions p {
+  margin: 0 0 4px;
+}
+.edition-name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.edition-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.document-details .access-policy {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 13px;
+}
+.document-details .access-policy p {
+  margin: 0 0 6px;
+}
+.document-details .access-policy a {
+  overflow-wrap: anywhere;
+}
+.document-details .provenance {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* Reader: the page first, its controls under it. */
+main:has(.document) .masthead {
+  padding-block: 10px;
+}
+.document-reader .reader {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 16px;
+  margin: 0;
+  padding: 0;
+  background: none;
+}
+.document-reader .reader > * {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+.document-reader .reader > .reader-controls {
+  order: 1;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+/* Zoomed in, the toolbar stays in reach while the page scrolls. */
+.document-reader .reader[data-fit="width"]:not([data-fullscreen]) > .reader-controls {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding-block: 6px;
+  background: #f5bed4ee;
+}
+/* Search and readable text open as one panel under the page. */
+.document-reader .reader > .reader-panel {
+  order: 2;
+  flex: 1 1 100%;
+  max-width: 760px;
+  padding: 12px;
+  font-size: 14px;
+  color: #231722;
+  background: #f7ebda;
+  border: 1px solid #231722;
+}
+.reader-panel-text h3 {
+  font: 700 12px/1.2 "Courier New", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 12px 0 6px;
+}
+.reader-panel-text p {
+  margin: 0;
+  max-height: 35dvh;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+.document-reader .reader > .reader-loading {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  margin: 0;
+  padding: 4px 8px;
+  font-size: 13px;
+  background: #f7ebda;
+  border: 1px solid #231722;
+}
+.reader-controls {
+  align-items: center;
+  gap: 8px 18px;
+}
+.reader-controls label,
+.reader .search label {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+/* "Page [n] of N" reads as one group. */
+.reader-pages {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.reader-count {
+  font-size: 14px;
+  white-space: nowrap;
+}
+.reader-controls input,
+.reader-controls select {
+  height: 36px;
+  padding: 0 8px;
+  font-size: 14px;
+  color: #231722;
+  background: #f7ebda;
+  border: 1px solid #231722;
+  border-radius: 0;
+}
+.reader-controls select {
+  appearance: none;
+  padding-right: 28px;
+  background: #f7ebda url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23231722' stroke-width='3'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 8px center / 12px no-repeat;
+}
+.reader-controls input {
+  width: 3.6em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.reader-controls input::-webkit-inner-spin-button,
+.reader-controls input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.reader-fullscreen,
+.reader-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  font-size: 14px;
+  color: #231722;
+  background: #f7ebda;
+  border: 1px solid #231722;
+  box-shadow: none;
+  cursor: pointer;
+}
+.reader-tool[aria-expanded="true"] {
+  background: #231722;
+  color: #f8e4cf;
+}
+.reader-fullscreen:hover,
+.reader-tool:hover {
+  background: #fff;
+}
+.reader-tool[aria-expanded="true"]:hover {
+  background: var(--accent);
+}
+.reader-title {
+  font: 700 16px/1.2 "Courier New", monospace;
+  margin-right: auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.reader details {
+  font-size: 14px;
+}
+.reader details > summary {
+  cursor: pointer;
+}
+.reader .search,
+.document-reader .reader .search {
+  flex-direction: row;
+  margin: 8px 0;
+  padding: 0;
+  border: 0;
+  gap: 8px;
+  align-items: center;
+}
+.reader .search label {
+  flex: 1;
+  white-space: nowrap;
+}
+.reader .search input {
+  flex: 1;
+  width: 0;
+  min-width: 80px;
+  padding: 6px 8px;
+}
+.reader .search button,
+.reader [aria-live] button {
+  padding: 6px 12px;
+  font-size: 14px;
+  background: #f7ebda;
+  color: #231722;
+  border: 1px solid #231722;
+}
+.reader-page {
+  container-type: inline-size;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  --arrows: 120px;
+}
+.reader-page .canvas-wrap {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+/* Whole page: the page box takes the screen height left under the header (the reader measures
+   --print-page-top) less the toolbar, and no more than the page needs at full width. */
+.reader[data-fit="page"] .canvas-wrap {
+  height: min(
+    max(240px, calc(100dvh - var(--print-page-top, 200px) - 64px)),
+    calc((100cqw - var(--arrows)) * var(--print-page-ratio, 1.4))
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  touch-action: pan-y pinch-zoom;
+}
+.canvas-wrap canvas {
+  background: #fff;
+  box-shadow: 3px 4px 0 #0003;
+}
+.page-arrow {
+  flex: none;
+  width: 48px;
+  height: 72px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: #231722;
+  color: #f8e4cf;
+  box-shadow: 2px 3px 0 #0002;
+}
+.page-arrow:hover:not(:disabled) {
+  background: var(--accent);
+}
+.page-arrow:disabled {
+  opacity: 1;
+  color: #23172240;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  cursor: default;
+}
+/* When zoomed in, keep the arrows in view while the page scrolls. */
+.reader[data-fit="width"] .page-arrow {
+  position: sticky;
+  top: calc(50dvh - 36px);
+  align-self: flex-start;
+}
+/* Full screen: the page, its arrows and a title bar on dark ink. */
+.reader[data-fullscreen],
+.document-reader .reader[data-fullscreen] {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #231722;
+  color: #f8e4cf;
+}
+.document-reader .reader[data-fullscreen] > * {
+  flex: none;
+}
+.document-reader .reader[data-fullscreen] > .reader-page {
+  flex: 1 1 auto;
+}
+.reader[data-fullscreen] > .search,
+.reader[data-fullscreen] > details,
+.reader[data-fullscreen] > [aria-live] {
+  display: none;
+}
+.reader[data-fullscreen] .page-arrow:hover:not(:disabled) {
+  background: var(--accent);
+  color: #f8e4cf;
+}
+.reader[data-fullscreen] .reader-controls,
+.document-reader .reader[data-fullscreen] > .reader-controls {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.reader[data-fullscreen] .reader-controls select {
+  background: #332231 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f8e4cf' stroke-width='3'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 8px center / 12px no-repeat;
+}
+.reader[data-fullscreen] .reader-controls input,
+.reader[data-fullscreen] .reader-controls select,
+.reader[data-fullscreen] .reader-fullscreen,
+.reader[data-fullscreen] .reader-tool {
+  color: #f8e4cf;
+  background-color: #332231;
+  border-color: #f8e4cfaa;
+}
+.reader[data-fullscreen] .reader-fullscreen:hover,
+.reader[data-fullscreen] .reader-tool:hover {
+  background: #4a3347;
+}
+.reader[data-fullscreen] .reader-tool[aria-expanded="true"] {
+  color: #231722;
+  background: #f8e4cf;
+}
+/* In full screen the panel floats under the bar instead of pushing the page. */
+.document-reader .reader[data-fullscreen] > .reader-panel {
+  position: absolute;
+  bottom: 64px;
+  right: 16px;
+  z-index: 2;
+  width: min(440px, calc(100% - 32px));
+  max-height: 60dvh;
+  overflow: auto;
+}
+.document-reader .reader[data-fullscreen] > .reader-page {
+  flex: 1 1 0;
+  min-height: 0;
+}
+.reader[data-fullscreen][data-fit="width"] .canvas-wrap {
+  height: 100%;
+  overflow: auto;
+}
+.reader[data-fullscreen][data-fit="width"] .page-arrow {
+  position: static;
+  align-self: center;
+}
+.reader[data-fit="page"][data-fullscreen] .canvas-wrap {
+  height: min(100%, calc((100cqw - var(--arrows)) * var(--print-page-ratio, 1.4)));
+}
+.reader[data-fullscreen] .page-arrow {
+  background: #f8e4cf;
+  color: #231722;
+}
+.reader[data-fullscreen] .page-arrow:disabled {
+  color: #f8e4cf40;
+  background: transparent;
+  border-color: #f8e4cf66;
+}
+@media (max-width: 900px) {
+  .document-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .document-details {
+    position: static;
+  }
+}
+@media (max-width: 900px) {
+  .document-details {
+    padding: 20px 0 0;
+    border-left: 0;
+    border-top: 2px dashed #231722;
+  }
+}
+@media (max-width: 640px) {
+  .document-body {
+    gap: 20px;
+  }
+  /* The reader runs edge to edge; the arrows get narrow gutters beside the page so nothing covers
+     the scan, and a swipe on the page also turns it. */
+  .document-reader .reader {
+    margin-inline: -4vw;
+  }
+  .document-reader .reader > .reader-controls,
+  .document-reader .reader > .reader-panel {
+    margin-inline: 4vw;
+  }
+  .reader-page {
+    gap: 4px;
+    --arrows: 96px;
+  }
+  .page-arrow {
+    width: 44px;
+    height: 64px;
+  }
+  .page-arrow svg {
+    width: 22px;
+    height: 22px;
+  }
+  /* Phones have no Escape key, so the way out of full screen says so. */
+  .reader-fullscreen[aria-pressed="true"] {
+    width: auto;
+    padding: 0 12px;
+  }
+  .reader-fullscreen[aria-pressed="true"] .reader-fullscreen-label {
+    position: static;
+    width: auto;
+    height: auto;
+    clip-path: none;
+  }
+  /* One toolbar row: icons carry full screen and search; their names stay for screen readers. */
+  .reader-fullscreen-label,
+  .reader-tool-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .reader-fullscreen,
+  .reader-tool {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .page-arrow svg {
+    width: 22px;
+    height: 22px;
+  }
+  /* On a phone the page is narrow, so it keeps its own height and the toolbar follows it. */
+  .reader[data-fit="page"] .canvas-wrap {
+    height: min(
+      max(240px, calc(100dvh - var(--print-page-top, 200px) - 64px)),
+      calc((100cqw - var(--arrows)) * var(--print-page-ratio, 1.4))
+    );
+  }
+  .byline {
+    font-size: 13px;
+    margin-left: -9px;
+    clip-path: inset(0 0 0 9px);
+  }
+  .byline span {
+    padding: 0 8px;
+  }
+  .reader-title {
+    display: none;
+  }
+  /* The page and zoom labels stay for screen readers only. */
+  .reader-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .reader-controls {
+    gap: 8px 12px;
+  }
+  .reader-controls input,
+  .reader-controls select,
+  .reader-fullscreen,
+  .reader-tool {
+    height: 44px;
+  }
+  .reader-controls select {
+    padding: 0 26px 0 8px;
+    font-size: 13px;
+  }
+  .reader-controls input {
+    width: 3em;
+  }
+  .document-reader .reader[data-fullscreen] {
+    padding: max(12px, env(safe-area-inset-top)) 0 max(12px, env(safe-area-inset-bottom));
+  }
+  .reader[data-fullscreen] .reader-controls,
+  .document-reader .reader[data-fullscreen] > .reader-controls {
+    justify-content: center;
+    gap: 6px 10px;
+  }
+}

@@ -211,10 +211,23 @@ export function ShareControls({ url, title }: { url: string | (() => string); ti
   const [status, setStatus] = useState(""),
     [fallback, setFallback] = useState("");
   const currentURL = () => typeof url === "function" ? url() : url;
+  const menu = useRef<HTMLDetailsElement>(null);
+  const [open, setOpen] = useState(false);
+  // Close the menu on Escape or a click outside it.
+  useEffect(() => {
+    if (!open) return;
+    const close = () => { if (menu.current) menu.current.open = false; };
+    const key = (event: KeyboardEvent) => { if (event.key === "Escape") { close(); menu.current?.querySelector("summary")?.focus(); } };
+    const pointer = (event: PointerEvent) => { if (!menu.current?.contains(event.target as Node)) close(); };
+    document.addEventListener("keydown", key);
+    document.addEventListener("pointerdown", pointer);
+    return () => { document.removeEventListener("keydown", key); document.removeEventListener("pointerdown", pointer); };
+  }, [open]);
   const socialURL = () => `https://bsky.app/intent/compose?text=${encodeURIComponent(`${title} ${currentURL()}`)}`;
   const emailURL = () => `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(currentURL())}`;
   async function share() {
     const link = currentURL();
+    if (menu.current) menu.current.open = false;
     try {
       if (navigator.share) await navigator.share({ url: link, title });
       else {
@@ -229,28 +242,33 @@ export function ShareControls({ url, title }: { url: string | (() => string); ti
   }
   return (
     <div className="share-controls">
-      <button
-        className="key"
-        onClick={() => {
-          void share();
-        }}
-      >
-        Share item
-      </button>
-      <a
-        href={socialURL()}
-        onClick={event => {event.currentTarget.href = socialURL();}}
-        target="_blank"
-        rel="noreferrer"
-      >
-        Share on Bluesky
-      </a>
-      <a
-        href={emailURL()}
-        onClick={event => {event.currentTarget.href = emailURL();}}
-      >
-        Share by email
-      </a>
+      <details className="share-more" ref={menu} onToggle={event => setOpen(event.currentTarget.open)}>
+        <summary>Share <span className="chevron" aria-hidden="true" /></summary>
+        <span className="share-menu">
+          <button
+            className="key"
+            onClick={() => {
+              void share();
+            }}
+          >
+            Copy or share link
+          </button>
+          <a
+            href={socialURL()}
+            onClick={event => {event.currentTarget.href = socialURL();}}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Share on Bluesky
+          </a>
+          <a
+            href={emailURL()}
+            onClick={event => {event.currentTarget.href = emailURL();}}
+          >
+            Share by email
+          </a>
+        </span>
+      </details>
       {status && <p role="status">{status}</p>}
       {fallback && (
         <label>

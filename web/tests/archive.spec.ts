@@ -38,18 +38,19 @@ test("catalog, page search, local PDF rendering, navigation and download", async
   await page.getByRole("button", { name: "Previous page" }).click();
   await expect(page.getByLabel("Page number")).toHaveValue("1");
   await page.getByLabel("Zoom", { exact: true }).selectOption("1.5");
+  await page.getByRole("button", { name: "Search & text", exact: true }).click();
   await page.getByLabel("Search this document").fill("knownword");
   await page.getByRole("button", { name: "Find", exact: true }).click();
   await page.getByRole("button", { name: "Page 2", exact: true }).click();
   await expect(page.getByLabel("Page number")).toHaveValue("2");
-  const link = page.getByRole("link", { name: "Download original PDF" });
+  const link = page.getByRole("link", { name: /^Download PDF/ });
   const response = await request.get((await link.getAttribute("href"))!);
   expect(response.ok()).toBeTruthy();
   expect(response.headers()["content-disposition"]).toContain("attachment");
   const digest = createHash("sha256")
     .update(await response.body())
     .digest("hex");
-  await page.getByText("Source and preservation details").click();
+  await page.getByText("Preservation details", { exact: true }).click();
   await expect(
     page.getByText("SHA-256: " + digest, { exact: true }),
   ).toBeVisible();
@@ -122,8 +123,16 @@ test("selected identity fits the configured catalog", async ({ page }) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   await expect(page.getByRole("link", { name: "Open Mutual aid fixture", exact: true }).first()).toBeVisible();
   await page.getByRole("link", { name: "Open Mutual aid fixture", exact: true }).first().click();
-  await expect(page.getByRole("link", { name: "Read on site", exact: true })).toBeVisible();
   await expect(page.getByLabel("Page number")).toHaveValue("1");
   await expect(page.getByTestId("pdf-canvas")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Next page", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Previous page", exact: true })).toBeHidden();
+  await expect(page.getByLabel("Zoom")).toHaveValue("page");
+  const canvas = await page.getByTestId("pdf-canvas").boundingBox();
+  expect(canvas && canvas.y + canvas.height <= (page.viewportSize()?.height ?? 0) + 1).toBeTruthy();
+  await page.getByRole("button", { name: "Full screen", exact: true }).click();
+  await expect(page.getByRole("region", { name: "Document reader" })).toHaveAttribute("data-fullscreen", "true");
+  await page.getByRole("button", { name: "Exit full screen", exact: true }).click();
+  await expect(page.getByRole("region", { name: "Document reader" })).not.toHaveAttribute("data-fullscreen", "true");
   await expect(page.getByText("No reuse license is asserted.", { exact: false })).toBeVisible();
 });

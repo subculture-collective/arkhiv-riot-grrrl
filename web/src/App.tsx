@@ -59,6 +59,23 @@ async function json<T>(url: string, signal: AbortSignal): Promise<T> {
     );
   return r.json();
 }
+// Catalog languages are ISO 639-2 codes ("eng"); show their English names.
+const languageCodes: Record<string, string> = { eng: "en", fre: "fr", fra: "fr", ger: "de", deu: "de", spa: "es", ita: "it", por: "pt", dut: "nl", nld: "nl", jpn: "ja" };
+export function languageName(code: string | undefined) {
+  if (!code) return "Unknown";
+  try {
+    return new Intl.DisplayNames(["en"], { type: "language" }).of(languageCodes[code] || code) || code;
+  } catch {
+    return code;
+  }
+}
+export const megabytes = (bytes: number) => `${(bytes / 1048576).toFixed(1)} MB`;
+export const textStatus = (v: Variant) =>
+  v.text_status === "page-text"
+    ? "Page text searchable."
+    : v.text_status === "document-text"
+      ? "Document text searchable; page mapping unavailable."
+      : "Text search unavailable.";
 export const originalDate = (doc: DocumentRecord) =>
   (doc.original_date === undefined ? doc.metadata.date : doc.original_date) ||
   "Date unknown";
@@ -91,18 +108,10 @@ export default function App() {
   const [subjects, setSubjects] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [focus, setFocus] = useState(false);
   const [collectionID, setCollectionID] = useState(
     params.get("collection") || "",
   );
   const favorites = useBrowserFavorites(collectionID);
-  useEffect(() => {
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setFocus(false);
-    };
-    window.addEventListener("keydown", escape);
-    return () => window.removeEventListener("keydown", escape);
-  }, []);
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
@@ -191,7 +200,6 @@ export default function App() {
   };
   return (
     <main
-      className={focus ? "reading-focus" : ""}
       style={
         { "--accent": collection?.accent || "#9b1459" } as React.CSSProperties
       }
@@ -226,7 +234,7 @@ export default function App() {
       )}
       {!loading && !error && collections.length > 0 && (
         <>
-          <nav className="collection-nav" aria-label="Collections">
+          {!doc && <nav className="collection-nav" aria-label="Collections">
             {collections.map((c) => (
               <a
                 key={c.id}
@@ -236,59 +244,9 @@ export default function App() {
                 {c.name}
               </a>
             ))}
-          </nav>
+          </nav>}
           {doc ? (
-            <section className="document">
-              <a href={`/?collection=${encodeURIComponent(doc.collection)}`}>
-                ← Back to collection
-              </a>
-              <p className="eyebrow">{collection?.name}</p>
-              <h1>{doc.metadata.title}</h1>
-              <FavoriteButton
-                id={doc.id}
-                title={doc.metadata.title}
-                favorites={favorites}
-              />
-              <ShareControls url={() => location.href} title={doc.metadata.title} />
-              {variant && (
-                <button aria-pressed={focus} onClick={() => setFocus(!focus)}>
-                  {focus ? "Exit reading focus" : "Reading focus"}
-                </button>
-              )}
-              <p className="description">
-                {doc.metadata.creator || "Creator unknown"} ·{" "}
-                {originalDate(doc)}
-              </p>
-              <p>{doc.metadata.subjects?.join(" · ")}</p>
-              <p>Language: {doc.metadata.language || "Unknown"}</p>
-              <aside className="access-policy" aria-label="Access and rights">
-                <p>
-                  <strong>
-                    Rights: {doc.rights === "unknown" ? "Unknown" : doc.rights}.
-                  </strong>{" "}
-                  {doc.variants.some((v) => v.public_approved)
-                    ? "Public reading and downloads are approved for archival access."
-                    : "This record is available in the private archive; public access has not been approved."}{" "}
-                  No reuse license is asserted.
-                </p>
-                <p>
-                  Source:{" "}
-                  <a
-                    href={`https://archive.org/details/${encodeURIComponent(doc.source_item)}`}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    Internet Archive · {doc.source_item}
-                  </a>
-                  .{" "}
-                  <a
-                    href={`mailto:${contact}?subject=${encodeURIComponent(`Riot Grrrl Archive correction or removal: ${doc.metadata.title}`)}&body=${encodeURIComponent(`Document: ${new URL(`/documents/${doc.id}`, publicURL).href}\n\nRequest and supporting information:\n`)}`}
-                  >
-                    Request a correction or removal
-                  </a>
-                  .
-                </p>
-              </aside>
+            <article className="document">
               {requestedVariant && !variant && (
                 <p role="alert" className="notice">
                   This edition is unavailable.{" "}
@@ -299,60 +257,152 @@ export default function App() {
                   </a>
                 </p>
               )}
-              <div className="variants">
-                {doc.variants.map((v) => (
-                  <article key={v.id}>
-                    <h2>{v.filename}</h2>
-                    <p>
-                      {v.pages || "Unknown"} pages ·{" "}
-                      {(v.size / 1048576).toFixed(1)} MB ·{" "}
-                      {v.text_status === "page-text"
-                        ? "Page text searchable"
-                        : v.text_status === "document-text"
-                          ? "Document text searchable; page mapping unavailable"
-                          : "Text search unavailable"}
-                    </p>
-                    <a
-                      className="button"
-                      href={`?read=1&variant=${v.id}&page=1`}
-                    >
-                      Read on site
-                    </a>{" "}
-                    <a href={`/api/assets/${v.id}?download=1`}>
-                      Download original PDF
+              <div className="document-body">
+                <div className="document-main">
+                  <nav className="document-crumbs" aria-label="Breadcrumb">
+                    <a href={`/?collection=${encodeURIComponent(doc.collection)}`}>
+                      <span className="back" aria-hidden="true">← </span>All zines
                     </a>
-                  </article>
-                ))}
-              </div>
-              {variant && (
-                <Suspense fallback={<p role="status">Loading reader…</p>}>
-                  <Reader
-                    variant={variant}
-                    initialPage={Number(params.get("page") || 1)}
-                  />
-                </Suspense>
-              )}
-              <details className="provenance">
-                <summary>Source and preservation details</summary>
-                <p>
-                  Source:{" "}
-                  <a
-                    href={`https://archive.org/details/${encodeURIComponent(doc.source_item)}`}
-                    target="_blank"
-                    rel="noreferrer"
+                  </nav>
+                  <header className="document-header">
+                    <h1>{doc.metadata.title}</h1>
+                    <p className="byline">
+                      <span>{doc.metadata.creator || "Creator unknown"}</span>
+                      <span>{originalDate(doc)}</span>
+                      {variant?.pages ? <span>{variant.pages} pages</span> : null}
+                      {doc.metadata.language ? <span>{languageName(doc.metadata.language)}</span> : null}
+                    </p>
+                  </header>
+                  {variant && (
+                    <div className="document-reader">
+                      <Suspense
+                        fallback={<p role="status">Loading reader…</p>}
+                      >
+                        <Reader
+                          variant={variant}
+                          title={doc.metadata.title}
+                          initialPage={Number(params.get("page") || 1)}
+                        />
+                      </Suspense>
+                    </div>
+                  )}
+                </div>
+                <aside
+                  className="document-details"
+                  aria-label="About this zine"
+                >
+                  <div className="document-actions">
+                    {variant && (
+                      <a
+                        className="button download"
+                        href={`/api/assets/${variant.id}?download=1`}
+                      >
+                        Download PDF <span className="download-size">({megabytes(variant.size)})</span>
+                      </a>
+                    )}
+                    <FavoriteButton
+                      id={doc.id}
+                      title={doc.metadata.title}
+                      favorites={favorites}
+                    />
+                    <ShareControls
+                      url={() => location.href}
+                      title={doc.metadata.title}
+                    />
+                  </div>
+                  {doc.metadata.subjects?.length ? (
+                    <section className="subjects" aria-labelledby="subjects-title">
+                      <h2 id="subjects-title">Subjects</h2>
+                      <ul className="subject-list">
+                        {doc.metadata.subjects.map((subject) => (
+                          <li key={subject}>
+                            <a href={`/?${new URLSearchParams({ collection: doc.collection, subject })}`}>
+                              {subject}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  ) : null}
+                  {doc.variants.length > 1 && <section
+                    className="editions"
+                    aria-labelledby="editions-title"
                   >
-                    Internet Archive · {doc.source_item}
-                  </a>
-                </p>
-                <p>Rights/access statement: {doc.rights}</p>
-                <p>Files are served from preserved local copies.</p>
-                {doc.variants.map((v) => (
-                  <p className="hash" key={v.id}>
-                    SHA-256: {v.sha256}
-                  </p>
-                ))}
-              </details>
-            </section>
+                    <h2 id="editions-title">Editions</h2>
+                    <ul>
+                      {doc.variants.map((v) => (
+                        <li
+                          key={v.id}
+                          aria-current={v.id === variant?.id ? "true" : undefined}
+                        >
+                          <p className="edition-name">{v.filename}</p>
+                          <p>
+                            {megabytes(v.size)}. {textStatus(v)}
+                          </p>
+                          <p className="edition-actions">
+                            {v.id !== variant?.id && (
+                              <a href={`?variant=${v.id}&page=1`}>
+                                Read on site
+                              </a>
+                            )}
+                            <a href={`/api/assets/${v.id}?download=1`}>
+                              Download original PDF
+                            </a>
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>}
+                  <section className="access-policy" aria-labelledby="rights-title">
+                    <h2 id="rights-title">Rights and source</h2>
+                    <details className="rights">
+                      <summary>
+                        <strong>
+                          Rights: {doc.rights === "unknown" ? "Unknown" : doc.rights}.
+                        </strong>{" "}
+                        No reuse license is asserted.
+                      </summary>
+                      <p>
+                        {doc.variants.some((v) => v.public_approved)
+                          ? "Public reading and downloads are approved for archival access."
+                          : "This record is available in the private archive; public access has not been approved."}
+                      </p>
+                    </details>
+                    <p>
+                      Source:{" "}
+                      <a
+                        href={`https://archive.org/details/${encodeURIComponent(doc.source_item)}`}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        Internet Archive · {doc.source_item}
+                      </a>
+                    </p>
+                    <p>
+                      <a
+                        href={`mailto:${contact}?subject=${encodeURIComponent(`Riot Grrrl Archive correction or removal: ${doc.metadata.title}`)}&body=${encodeURIComponent(`Document: ${new URL(`/documents/${doc.id}`, publicURL).href}\n\nRequest and supporting information:\n`)}`}
+                      >
+                        Request a correction or removal
+                      </a>
+                    </p>
+                  </section>
+                  <details className="provenance">
+                    <summary>Preservation details</summary>
+                    <p>Rights/access statement: {doc.rights}</p>
+                    <p>Files are served from preserved local copies.</p>
+                    {doc.variants.map((v) => (
+                      <div key={v.id}>
+                        <p className="edition-name">{v.filename}</p>
+                        <p>
+                          {megabytes(v.size)}. {textStatus(v)}
+                        </p>
+                        <p className="hash">SHA-256: {v.sha256}</p>
+                      </div>
+                    ))}
+                  </details>
+                </aside>
+              </div>
+            </article>
           ) : (
             <Catalog
               collection={collection}
@@ -366,14 +416,14 @@ export default function App() {
           )}
         </>
       )}
-      {collectionID && (
+      {collectionID && !id && (
         <FavoriteShelf
           favorites={favorites}
           scope={collectionID}
           resolve={favoriteDocument}
         />
       )}
-      <section className="about" id="about" aria-labelledby="about-title">
+      {!id && <section className="about" id="about" aria-labelledby="about-title">
         <h2 id="about-title">About this archive</h2>
         <p>
           The Riot Grrrl Archive preserves feminist punk zines and serves
@@ -393,10 +443,10 @@ export default function App() {
           details of your request. Access can be withdrawn while preservation
           and decision records remain in the private archive.
         </p>
-      </section>
+      </section>}
       <footer>
         <span>Riot Grrrl Archive · Preserved with Arkhiv</span>
-        <a href="#about">About, rights and contact</a>
+        <a href={id ? "/#about" : "#about"}>About, rights and contact</a>
         <a href="https://subcult.tv/support">Support SUBCULT’s archive software</a>
       </footer>
     </main>
