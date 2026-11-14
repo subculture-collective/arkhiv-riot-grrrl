@@ -1388,3 +1388,45 @@ main:has(.document) .masthead {
   margin: -10px 0 0;
   font-size: 13px;
 }
+
+/* Series: the masthead link, the series page and a document's series. */
+.masthead nav a[aria-current="page"] {
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px;
+}
+.catalog-heading h1 {
+  font: 700 34px/1.1 "Courier New", monospace;
+  background: #f3e4c8;
+  padding: 8px 15px;
+  margin: 0;
+  transform: rotate(-2deg);
+}
+.series-index .catalog-heading {
+  margin-bottom: 36px;
+}
+.series-index .catalog-heading p {
+  max-width: 460px;
+  font-size: 13px;
+}
+.series-count {
+  font: 700 13px/1.4 "Courier New", monospace;
+}
+.series-issues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font: 14px/1.5 "Courier New", monospace;
+}
+.series-issues [aria-current="page"] {
+  font-weight: 700;
+}
+.document-details .series p {
+  margin: 0;
+}
+.series-links {
+  font: 13px/1.5 "Courier New", monospace;
+}
