@@ -55,5 +55,8 @@ describe("byline values", () => {
     expect(languageName("fr-CA")).toBe("Canadian French");
     expect(languageName("english")).toBe("English");
     expect(languageName(undefined)).toBe("Unknown");
+    for (const messy of [" ", "-", "_", " - _ "]) expect(languageName(messy)).toBe("Unknown");
+    expect(languageName(" eng ")).toBe("English");
+    expect(languageName("english and french")).toBe("English and french");
   });
 });

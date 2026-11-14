@@ -67,11 +67,13 @@ async function json<T>(url: string, signal: AbortSignal): Promise<T> {
     );
   return r.json();
 }
-// Catalog languages are ISO 639-2 codes ("eng"); show their English names.
+// Catalog languages are usually ISO 639-2 codes ("eng"); show their English
+// names. Codes Intl does not know fall through to languageName's free-text path.
 const languageCodes: Record<string, string> = { eng: "en", fre: "fr", fra: "fr", ger: "de", deu: "de", spa: "es", ita: "it", por: "pt", dut: "nl", nld: "nl", jpn: "ja" };
-const displayNames = new Intl.DisplayNames(["en"], { type: "language" });
+let displayNames: Intl.DisplayNames | undefined;
 function knownLanguage(code: string) {
   try {
+    displayNames ??= new Intl.DisplayNames(["en"], { type: "language" });
     const name = displayNames.of(languageCodes[code.toLowerCase()] || code);
     return name && name.toLowerCase() !== code.toLowerCase() ? name : undefined;
   } catch {
@@ -81,10 +83,12 @@ function knownLanguage(code: string) {
 // Some source records carry free text such as "english-handwritten" instead
 // of a code. The stored value is kept; it is shown as "English (handwritten)".
 export function languageName(code: string | undefined) {
-  if (!code) return "Unknown";
-  const known = knownLanguage(code);
+  const value = code?.trim();
+  if (!value) return "Unknown";
+  const known = knownLanguage(value);
   if (known) return known;
-  const [base, ...notes] = code.split(/[-_\s]+/).filter(Boolean);
+  const [base, ...notes] = value.split(/[-_]+/).map((part) => part.trim()).filter(Boolean);
+  if (!base) return "Unknown";
   const name = knownLanguage(base) || base.charAt(0).toUpperCase() + base.slice(1);
   return notes.length ? `${name} (${notes.join(" ")})` : name;
 }
