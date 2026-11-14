@@ -139,6 +139,44 @@ export const addressWithout = (pathname: string, search: string, key: string) =>
   const rest = q.toString();
   return rest ? `${pathname}?${rest}` : pathname;
 };
+// Site-wide values match web/index.html; catalog pages restore them.
+const siteTitle = "Riot Grrrl Zine Archive";
+const siteDescription =
+  "Read preserved feminist punk zines, with original scans, available text, source history and rights uncertainty beside each record.";
+const siteSocialDescription =
+  "A catalog and reader for preserved Riot Grrrl zines, with source and rights notes retained.";
+// Head metadata for the current route. The URL drops volatile parameters
+// (page, variant, search, offset) so each zine and catalog has one address.
+export function pageMeta(
+  doc: DocumentRecord | null,
+  collectionName: string | undefined,
+  collectionID: string,
+  defaultCollectionID: string | undefined,
+  id: string,
+  seriesPage: boolean,
+  base: string,
+) {
+  if (id) {
+    const url = new URL(`/documents/${id}`, base).href;
+    if (!doc) return { title: "Riot Grrrl zines · Riot Grrrl Archive", socialTitle: siteTitle, description: siteDescription, socialDescription: siteSocialDescription, url };
+    const date = originalDate(doc);
+    const by = [doc.metadata.creator, date === "Date unknown" ? "" : date].filter(Boolean).join(", ");
+    const description = `${doc.metadata.title}${by ? ` (${by})` : ""}: read the original scan in the Riot Grrrl Zine Archive, with source and rights notes.`;
+    return { title: `${doc.metadata.title} · Riot Grrrl Archive`, socialTitle: doc.metadata.title, description, socialDescription: description, url };
+  }
+  const path = seriesPage
+    ? "/series"
+    : collectionID && collectionID !== defaultCollectionID
+      ? `/?collection=${encodeURIComponent(collectionID)}`
+      : "/";
+  return {
+    title: `${(seriesPage ? "Series" : collectionName) || "Riot Grrrl zines"} · Riot Grrrl Archive`,
+    socialTitle: siteTitle,
+    description: siteDescription,
+    socialDescription: siteSocialDescription,
+    url: new URL(path, base).href,
+  };
+}
 const favoriteDocument = async (
   id: string,
   signal: AbortSignal,
@@ -295,12 +333,13 @@ export default function App() {
     // The SPA is always served with HTTP 200, so a missing page tells search
     // engines not to index it and does not claim a canonical address.
     let robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
-    let canonical = document.querySelector<HTMLLinkElement>(
+    const canonical = document.querySelector<HTMLLinkElement>(
       'link[rel="canonical"]',
     );
     if (notFound || missingCollection) {
       document.title = "Not found · Riot Grrrl Archive";
       canonical?.remove();
+      document.head.querySelector('meta[property="og:url"]')?.remove();
       if (!robots) {
         robots = document.createElement("meta");
         robots.name = "robots";
@@ -310,23 +349,33 @@ export default function App() {
       return;
     }
     robots?.remove();
-    document.title = `${doc?.metadata.title || (seriesPage ? "Series" : collection?.name) || "Riot Grrrl zines"} · Riot Grrrl Archive`;
-    if (!canonical) {
-      canonical = document.createElement("link");
-      canonical.rel = "canonical";
-      document.head.append(canonical);
-    }
-    canonical.href = new URL(
-      id
-        ? `/documents/${id}`
-        : seriesPage
-          ? "/series"
-          : collectionID
-          ? `/?collection=${encodeURIComponent(collectionID)}`
-          : "/",
+    const meta = pageMeta(
+      doc,
+      collection?.name,
+      collectionID,
+      collections[0]?.id,
+      id,
+      seriesPage,
       publicURL,
-    ).href;
-  }, [doc, collection, collectionID, id, seriesPage, notFound, missingCollection]);
+    );
+    document.title = meta.title;
+    const setHead = (tag: "link" | "meta", key: string, name: string, attr: string, value: string) => {
+      let el = document.head.querySelector(`${tag}[${key}="${name}"]`);
+      if (!el) {
+        el = document.createElement(tag);
+        el.setAttribute(key, name);
+        document.head.append(el);
+      }
+      el.setAttribute(attr, value);
+    };
+    setHead("link", "rel", "canonical", "href", meta.url);
+    setHead("meta", "property", "og:url", "content", meta.url);
+    setHead("meta", "property", "og:title", "content", meta.socialTitle);
+    setHead("meta", "name", "twitter:title", "content", meta.socialTitle);
+    setHead("meta", "name", "description", "content", meta.description);
+    setHead("meta", "property", "og:description", "content", meta.socialDescription);
+    setHead("meta", "name", "twitter:description", "content", meta.socialDescription);
+  }, [doc, collection, collections, collectionID, id, seriesPage, notFound, missingCollection]);
   const offsetLink = (n: number) => {
     const q = new URLSearchParams(location.search);
     q.set("collection", collectionID);
