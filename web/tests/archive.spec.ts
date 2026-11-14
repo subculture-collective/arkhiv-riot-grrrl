@@ -168,6 +168,59 @@ test("selected identity fits the configured catalog", async ({ page }) => {
   await expect(page.getByText("No reuse license is asserted.", { exact: false })).toBeVisible();
 });
 
+test("search panel leaves every reader control reachable, in and out of full screen", async ({ page }) => {
+  const controls = {
+    "Page number": 'input[aria-label="Page number"]',
+    Zoom: "select[aria-label=Zoom]",
+    "Full screen": "button.reader-fullscreen",
+    "Search & text": "button.reader-tool",
+    "Previous page": "button.page-arrow-previous",
+    "Next page": "button.page-arrow-next",
+  };
+  // Names of the controls that are off screen or under something else at their centre.
+  const blocked = () => page.evaluate((controls) => Object.entries(controls).filter(([, selector]) => {
+    const control = document.querySelector(selector)!;
+    const box = control.getBoundingClientRect();
+    if (box.top < 0 || box.bottom > innerHeight || box.right > innerWidth) return true;
+    const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+    return !hit || !control.contains(hit);
+  }).map(([name]) => name), controls);
+  const findInsidePanel = () => page.evaluate(() => {
+    const panel = document.querySelector(".reader-panel")!;
+    const find = panel.querySelector("form button")!.getBoundingClientRect();
+    return find.right <= panel.getBoundingClientRect().right && panel.scrollWidth <= panel.clientWidth;
+  });
+  await page.goto("/?collection=fixture-zines");
+  await page.getByRole("link", { name: "Open Mutual aid fixture", exact: true }).first().click();
+  await expect(page.getByTestId("pdf-canvas")).toBeVisible();
+  await page.getByRole("button", { name: "Full screen", exact: true }).click();
+  await expect(page.getByRole("region", { name: "Document reader" })).toHaveAttribute("data-fullscreen", "true");
+  await page.getByRole("button", { name: "Search & text", exact: true }).click();
+  await page.getByLabel("Search this document").fill("knownword");
+  await page.getByRole("button", { name: "Find", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Page 2", exact: true })).toBeVisible();
+  // Real zines have long results and page text; make the panel as tall as it gets.
+  await page.locator(".reader-panel").evaluate((panel) => {
+    const filler = document.createElement("p");
+    filler.textContent = "long page text ".repeat(500);
+    panel.append(filler);
+  });
+  for (const [width, height] of [[1280, 900], [820, 1180], [390, 780], [320, 640]]) {
+    await page.setViewportSize({ width, height });
+    await expect.poll(blocked, { message: `full screen at ${width}px` }).toEqual([]);
+    expect(await findInsidePanel(), `Find inside the panel at ${width}px`).toBeTruthy();
+  }
+  await page.getByRole("button", { name: "Next page", exact: true }).click();
+  await expect(page.getByLabel("Page number")).toHaveValue("2");
+  await page.getByRole("button", { name: "Exit full screen", exact: true }).click();
+  await expect(page.getByRole("region", { name: "Document reader" })).not.toHaveAttribute("data-fullscreen", "true");
+  // The smallest phones keep the toolbar on one row and the Find button inside the panel.
+  await page.setViewportSize({ width: 320, height: 640 });
+  await expect.poll(() => page.locator(".reader-controls").evaluate((e) => e.getBoundingClientRect().height)).toBeLessThanOrEqual(50);
+  expect(await findInsidePanel()).toBeTruthy();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+});
+
 test("series page, series filter and creator suggestions", async ({ page }) => {
   await page.goto("/series?collection=fixture-zines");
   await expect(page.getByRole("heading", { name: "Series", level: 1 })).toBeVisible();

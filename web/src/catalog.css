@@ -1257,15 +1257,17 @@ main:has(.document) .masthead {
   color: #231722;
   background: #f8e4cf;
 }
-/* In full screen the panel floats under the bar instead of pushing the page. */
+/* In full screen the panel sits between the page and the bar, and the page shrinks to make room,
+   so it never covers the arrows or the toolbar however tall either gets. */
 .document-reader .reader[data-fullscreen] > .reader-panel {
-  position: absolute;
-  bottom: 64px;
-  right: 16px;
-  z-index: 2;
-  width: min(440px, calc(100% - 32px));
-  max-height: 60dvh;
+  order: 1;
+  align-self: center;
+  width: min(760px, 100%);
+  max-height: 40dvh;
   overflow: auto;
+}
+.document-reader .reader[data-fullscreen] > .reader-controls {
+  order: 2;
 }
 .document-reader .reader[data-fullscreen] > .reader-page {
   flex: 1 1 0;
@@ -1412,6 +1414,25 @@ main:has(.document) .masthead {
   .document-reader .reader[data-fullscreen] > .reader-controls {
     justify-content: center;
     gap: 6px 10px;
+  }
+  /* Full screen has no side padding here; the panel keeps the toolbar's 4vw gutters. */
+  .document-reader .reader[data-fullscreen] > .reader-panel {
+    align-self: stretch;
+    width: auto;
+  }
+  /* On the narrowest phones the input drops under its label so the Find button stays inside the
+     panel. */
+  .reader .search label {
+    flex-wrap: wrap;
+  }
+}
+/* The smallest phones: tighter gaps keep page, zoom, full screen and search on one row. */
+@media (max-width: 360px) {
+  .reader-controls {
+    column-gap: 6px;
+  }
+  .reader-controls select {
+    padding-right: 22px;
   }
 }
 .favorite-notice {
