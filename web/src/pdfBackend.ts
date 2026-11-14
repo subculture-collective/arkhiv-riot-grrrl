@@ -6,8 +6,8 @@ GlobalWorkerOptions.workerSrc = worker;
 export const pdfBackend: PrintBackend = {
   open(url) {
     // Fetch only the byte ranges a page needs. By default pdf.js streams the
-    // whole file while also making range requests, so large scans arrive
-    // 1.4-1.75 times over before page 1 shows.
+    // whole file while also making range requests for the same bytes, so a
+    // large scan transfers about 1.45-1.8 times its size in total.
     const task = getDocument({url,disableStream:true,disableAutoFetch:true,canvasMaxAreaInBytes:32*1024*1024,isEvalSupported:false,enableXfa:false,cMapUrl:'/pdfjs/cmaps/',cMapPacked:true,standardFontDataUrl:'/pdfjs/standard_fonts/',wasmUrl:'/pdfjs/wasm/'});
     return {destroy: () => task.destroy(),promise: task.promise.then(pdf => ({
       numPages:pdf.numPages,
